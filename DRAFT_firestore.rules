@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- Entity Validations ---
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'createdAt']) 
+        && data.keys().size() == 2
+        && data.email is string && data.email.size() <= 200
+        && data.createdAt == request.time;
+    }
+
+    function isValidExpense(data, userId) {
+      return data.keys().hasAll(['amount', 'category', 'date', 'description', 'userId', 'createdAt'])
+        && data.keys().size() == 6
+        && data.amount is number && data.amount > 0
+        && data.category is string && data.category.size() <= 50
+        && data.date is string && data.date.size() <= 100 // ISO date string
+        && data.description is string && data.description.size() <= 500
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.createdAt == request.time;
+    }
+
+    function isValidBudget(data, userId) {
+      return data.keys().hasAll(['amount', 'month', 'year', 'userId', 'createdAt'])
+        && data.keys().size() == 5
+        && data.amount is number && data.amount >= 0
+        && data.month is int && data.month >= 0 && data.month <= 11
+        && data.year is int && data.year >= 2000 && data.year <= 2100
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.createdAt == request.time;
+    }
+
+    // --- Collections ---
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidUser(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['email'])
+      );
+
+      match /expenses/{expenseId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(expenseId) && isValidExpense(incoming(), userId);
+        allow update: if isOwner(userId) && isValidExpense(incoming(), userId) && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'category', 'date', 'description'])
+        );
+        allow delete: if isOwner(userId);
+      }
+
+      match /budgets/{budgetId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(budgetId) && isValidBudget(incoming(), userId);
+        allow update: if isOwner(userId) && isValidBudget(incoming(), userId) && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'month', 'year'])
+        );
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User's email address."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the user was created."
+        }
+      },
+      "required": ["email", "createdAt"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "An individual expense entry.",
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "number",
+          "description": "The amount spent."
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the expense (e.g. Food, Rent)."
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date of the expense."
+        },
+        "description": {
+          "type": "string",
+          "description": "Brief description of the expense."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who owns this expense."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-side timestamp."
+        }
+      },
+      "required": ["amount", "category", "date", "description", "userId", "createdAt"]
+    },
+    "Budget": {
+      "title": "Budget",
+      "description": "Monthly budget limit.",
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "number",
+          "description": "The budget amount."
+        },
+        "month": {
+          "type": "number",
+          "description": "Month index (0-11)."
+        },
+        "year": {
+          "type": "number",
+          "description": "Year of the budget."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-side timestamp."
+        }
+      },
+      "required": ["amount", "month", "year", "userId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data."
+    },
+    "/users/{userId}/expenses/{expenseId}": {
+      "schema": "Expense",
+      "description": "Expenses for a specific user."
+    },
+    "/users/{userId}/budgets/{budgetId}": {
+      "schema": "Budget",
+      "description": "Budgets for a specific user."
+    }
+  }
+}

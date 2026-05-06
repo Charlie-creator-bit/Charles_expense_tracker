@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+  --color-primary: #10b981;
+  --color-primary-hover: #34d399;
+}
+
+@layer base {
+  body {
+    @apply font-sans bg-[#0f172a] text-slate-200;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display text-white tracking-tight;
+  }
+}
+
+.glass-card {
+  @apply bg-[#1e293b]/60 backdrop-blur-xl border border-slate-700/50 rounded-[2rem] shadow-2xl;
+}
+
+.glass-panel {
+  @apply bg-[#1e293b]/40 border border-slate-700/30 rounded-[2rem] overflow-hidden;
+}
+
