@@ -122,6 +122,26 @@ export const firebaseService = {
     }
   },
 
+  deleteExpense: async (id: string) => {
+    if (!auth.currentUser) return;
+    const path = `users/${auth.currentUser.uid}/expenses`;
+    try {
+      await deleteDoc(doc(db, path, id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `${path}/${id}`);
+    }
+  },
+
+  deleteIncome: async (id: string) => {
+    if (!auth.currentUser) return;
+    const path = `users/${auth.currentUser.uid}/incomes`;
+    try {
+      await deleteDoc(doc(db, path, id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `${path}/${id}`);
+    }
+  },
+
   // Accounts
   getAccounts: async () => {
     if (!auth.currentUser) return [];

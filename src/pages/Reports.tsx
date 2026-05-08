@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { format, subMonths } from "date-fns";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
-import { TrendingUp, TrendingDown, PieChart as PieChartIcon, BarChart as BarChartIcon, AlertCircle, Wallet, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { TrendingUp, TrendingDown, PieChart as PieChartIcon, BarChart as BarChartIcon, AlertCircle, Wallet, ArrowUpRight, ArrowDownRight, Trash2 } from "lucide-react";
 import { firebaseService } from "../services/firebaseService";
 import { formatCurrency } from "../lib/utils";
 import EmptyState from "../components/EmptyState";
@@ -41,6 +41,20 @@ export default function Reports() {
       console.error(err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteTransaction = async (id: string, type: "expense" | "income") => {
+    if (!window.confirm("CRITICAL: Purge this transaction record from the ledger?")) return;
+    try {
+      if (type === "expense") {
+        await firebaseService.deleteExpense(id);
+      } else {
+        await firebaseService.deleteIncome(id);
+      }
+      fetchData();
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -201,11 +215,20 @@ export default function Reports() {
                 .map((expense) => (
                   <div key={expense._id} className="group relative">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex-1">
                         <p className="text-sm font-bold text-white transition-colors group-hover:text-emerald-400">{expense.description}</p>
                         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{expense.category}</p>
                       </div>
-                      <span className="font-mono text-sm font-bold text-rose-400">-{formatCurrency(expense.amount)}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-sm font-bold text-rose-400">-{formatCurrency(expense.amount)}</span>
+                        <button 
+                          onClick={() => handleDeleteTransaction(expense._id, expense.type)}
+                          className="text-slate-500 hover:text-rose-500 transition-all p-1"
+                          title="Purge Record"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
                     <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-800">
                       <div 

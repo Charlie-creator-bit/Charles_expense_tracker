@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import { Plus, Wallet, TrendingUp, AlertCircle, ShoppingBag, Utensils, Car, Home, Zap, MoreHorizontal, TrendingDown, DollarSign, Loader2 } from "lucide-react";
+import { Plus, Wallet, TrendingUp, AlertCircle, ShoppingBag, Utensils, Car, Home, Zap, MoreHorizontal, TrendingDown, DollarSign, Loader2, Trash2 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { auth } from "../lib/firebase";
 import { firebaseService } from "../services/firebaseService";
@@ -154,6 +154,20 @@ export default function Dashboard() {
     }
   };
 
+  const handleDeleteTransaction = async (id: string, type: "expense" | "income") => {
+    if (!window.confirm("CRITICAL: Purge this transaction record from the ledger?")) return;
+    try {
+      if (type === "expense") {
+        await firebaseService.deleteExpense(id);
+      } else {
+        await firebaseService.deleteIncome(id);
+      }
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   if (isLoading) return <div className="flex h-screen items-center justify-center text-slate-400">Loading...</div>;
 
   return (
@@ -237,11 +251,12 @@ export default function Dashboard() {
                     <th className="px-6 py-4">Transaction</th>
                     <th className="px-6 py-4">Category</th>
                     <th className="px-6 py-4 text-right">Amount</th>
+                    <th className="px-6 py-4 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
                   {transactions.slice(0, 10).map((t) => (
-                    <tr key={t._id} className="border-b border-slate-700/10 transition-colors hover:bg-slate-700/20">
+                    <tr key={t._id} className="border-b border-slate-700/10 transition-colors hover:bg-slate-700/20 group">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className={`flex h-8 w-8 items-center justify-center rounded-full border bg-slate-800/80 ${t.type === 'income' ? 'border-emerald-500/30 text-emerald-400' : 'border-slate-700/50 text-slate-300'}`}>
@@ -263,6 +278,15 @@ export default function Dashboard() {
                       </td>
                       <td className={`px-6 py-4 text-right font-mono font-bold ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
                         {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button 
+                          onClick={() => handleDeleteTransaction(t._id, t.type)}
+                          className="text-slate-500 hover:text-rose-500 transition-all p-1"
+                          title="Purge Record"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </td>
                     </tr>
                   ))}
