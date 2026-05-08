@@ -48,6 +48,38 @@ export const firebaseService = {
     }
   },
 
+  // Incomes
+  getIncomes: async () => {
+    if (!auth.currentUser) return [];
+    const path = `users/${auth.currentUser.uid}/incomes`;
+    try {
+      const q = query(
+        collection(db, path),
+        orderBy("date", "desc")
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, path);
+      return [];
+    }
+  },
+
+  addIncome: async (incomeData: any) => {
+    if (!auth.currentUser) return;
+    const path = `users/${auth.currentUser.uid}/incomes`;
+    try {
+      const docRef = await addDoc(collection(db, path), {
+        ...incomeData,
+        userId: auth.currentUser.uid,
+        createdAt: serverTimestamp()
+      });
+      return { _id: docRef.id, ...incomeData };
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, path);
+    }
+  },
+
   // Budgets
   getBudget: async (month: number, year: number) => {
     if (!auth.currentUser) return null;
@@ -87,6 +119,46 @@ export const firebaseService = {
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  },
+
+  // Accounts
+  getAccounts: async () => {
+    if (!auth.currentUser) return [];
+    const path = `users/${auth.currentUser.uid}/accounts`;
+    try {
+      const snapshot = await getDocs(collection(db, path));
+      return snapshot.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, path);
+      return [];
+    }
+  },
+
+  addAccount: async (accountData: any) => {
+    if (!auth.currentUser) return;
+    const path = `users/${auth.currentUser.uid}/accounts`;
+    try {
+      const docRef = await addDoc(collection(db, path), {
+        ...accountData,
+        userId: auth.currentUser.uid,
+        status: 'active',
+        lastSynced: new Date().toISOString(),
+        createdAt: serverTimestamp()
+      });
+      return { _id: docRef.id, ...accountData, status: 'active', lastSynced: new Date().toISOString() };
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, path);
+    }
+  },
+
+  deleteAccount: async (accountId: string) => {
+    if (!auth.currentUser) return;
+    const path = `users/${auth.currentUser.uid}/accounts`;
+    try {
+      await deleteDoc(doc(db, path, accountId));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `${path}/${accountId}`);
     }
   }
 };

@@ -67,6 +67,10 @@ export default function Profile() {
       const budgetsSnap = await getDocs(budgetsRef);
       await Promise.all(budgetsSnap.docs.map(d => deleteDoc(d.ref)));
 
+      const accountsRef = collection(db, `users/${uid}/accounts`);
+      const accountsSnap = await getDocs(accountsRef);
+      await Promise.all(accountsSnap.docs.map(d => deleteDoc(d.ref)));
+
       await deleteDoc(doc(db, "users", uid));
 
       // 2. Delete Auth user
@@ -146,7 +150,7 @@ export default function Profile() {
               <div className="space-y-2">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Monthly Budget Target</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-mono font-bold text-slate-500">$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-mono font-bold text-slate-500">GH₵</span>
                   <input
                     type="number"
                     required

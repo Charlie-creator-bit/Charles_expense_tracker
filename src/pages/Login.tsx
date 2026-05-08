@@ -64,7 +64,7 @@ export default function Login() {
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-xl shadow-emerald-500/20">
               <Wallet className="h-9 w-9" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-white font-display">Ledger.io</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-white font-display">Login</h1>
             <p className="mt-2 text-slate-400">Sign in to your financial command center</p>
           </div>
 

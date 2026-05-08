@@ -80,6 +80,78 @@
         }
       },
       "required": ["amount", "month", "year", "userId", "createdAt"]
+    },
+    "Income": {
+      "title": "Income",
+      "description": "An individual income entry.",
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "number",
+          "description": "The amount earned."
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the income (e.g. Salary, Freelance)."
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date of the income."
+        },
+        "description": {
+          "type": "string",
+          "description": "Brief description of the income."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who owns this income."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server-side timestamp."
+        }
+      },
+      "required": ["amount", "category", "date", "description", "userId", "createdAt"]
+    },
+    "ConnectedAccount": {
+      "title": "Connected Account",
+      "description": "An external bank or mobile money account linked to the tracker.",
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "description": "Provider name (e.g., MTN, Telecel, GCB Bank)."
+        },
+        "accountType": {
+          "type": "string",
+          "description": "Type of account (bank or mobile_money)."
+        },
+        "accountMask": {
+          "type": "string",
+          "description": "Last few digits of the account for display."
+        },
+        "status": {
+          "type": "string",
+          "description": "Current sync status (active, disconnected, error)."
+        },
+        "lastSynced": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last time transactions were pulled."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner UID."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp."
+        }
+      },
+      "required": ["provider", "accountType", "userId", "createdAt"]
     }
   },
   "firestore": {
@@ -91,9 +163,17 @@
       "schema": "Expense",
       "description": "Expenses for a specific user."
     },
+    "/users/{userId}/incomes/{incomeId}": {
+      "schema": "Income",
+      "description": "Incomes for a specific user."
+    },
     "/users/{userId}/budgets/{budgetId}": {
       "schema": "Budget",
       "description": "Budgets for a specific user."
+    },
+    "/users/{userId}/accounts/{accountId}": {
+      "schema": "ConnectedAccount",
+      "description": "Linked financial accounts."
     }
   }
 }

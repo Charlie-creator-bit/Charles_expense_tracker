@@ -4,6 +4,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import Profile from "./pages/Profile";
+import ConnectAccounts from "./pages/ConnectAccounts";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
 
@@ -31,6 +32,7 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Layout><Dashboard /></Layout>} />
           <Route path="/reports" element={<Layout><Reports /></Layout>} />
+          <Route path="/accounts" element={<Layout><ConnectAccounts /></Layout>} />
           <Route path="/profile" element={<Layout><Profile /></Layout>} />
         </Route>
 

@@ -65,6 +65,27 @@ service cloud.firestore {
         && data.createdAt == request.time;
     }
 
+    function isValidIncome(data, userId) {
+      return data.keys().hasAll(['amount', 'category', 'date', 'description', 'userId', 'createdAt'])
+        && data.keys().size() == 6
+        && data.amount is number && data.amount > 0
+        && data.category is string && data.category.size() <= 50
+        && data.date is string && data.date.size() <= 100
+        && data.description is string && data.description.size() <= 500
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.createdAt == request.time;
+    }
+
+    function isValidAccount(data, userId) {
+      return data.keys().hasAll(['provider', 'accountType', 'userId', 'createdAt'])
+        && data.provider is string && data.provider.size() <= 100
+        && data.accountType is string && data.accountType.size() <= 50
+        && data.userId == userId
+        && data.userId == request.auth.uid
+        && data.createdAt == request.time;
+    }
+
     // --- Collections ---
 
     match /users/{userId} {
@@ -84,6 +105,16 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      match /incomes/{incomeId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(incomeId) && isValidIncome(incoming(), userId);
+        allow update: if isOwner(userId) && isValidIncome(incoming(), userId) && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'category', 'date', 'description'])
+        );
+        allow delete: if isOwner(userId);
+      }
+
       match /budgets/{budgetId} {
         allow list: if isOwner(userId);
         allow get: if isOwner(userId);
@@ -91,6 +122,14 @@ service cloud.firestore {
         allow update: if isOwner(userId) && isValidBudget(incoming(), userId) && (
           incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'month', 'year'])
         );
+        allow delete: if isOwner(userId);
+      }
+
+      match /accounts/{accountId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(accountId) && isValidAccount(incoming(), userId);
+        allow update: if isOwner(userId) && isValidAccount(incoming(), userId);
         allow delete: if isOwner(userId);
       }
     }

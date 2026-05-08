@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { LogOut, LayoutDashboard, PieChart, User, Wallet, ChevronRight } from "lucide-react";
+import { LogOut, LayoutDashboard, PieChart, User, Wallet, ChevronRight, CreditCard } from "lucide-react";
 import { cn } from "../lib/utils";
 import { auth } from "../lib/firebase";
 
@@ -19,6 +19,7 @@ export default function Navbar() {
   const menuItems = [
     { to: "/", icon: <LayoutDashboard className="h-5 w-5" />, label: "Dashboard" },
     { to: "/reports", icon: <PieChart className="h-5 w-5" />, label: "Reports" },
+    { to: "/accounts", icon: <CreditCard className="h-5 w-5" />, label: "Accounts" },
     { to: "/profile", icon: <User className="h-5 w-5" />, label: "Profile" },
   ];
 
