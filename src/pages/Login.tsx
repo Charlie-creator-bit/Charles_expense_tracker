@@ -2,9 +2,8 @@ import { useState } from "react";
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Wallet, Mail, Lock, Loader2, ArrowRight, Eye, EyeOff } from "lucide-react";
-import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "../lib/firebase";
+import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../lib/firebase";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -18,11 +17,13 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+    
     try {
       await signInWithEmailAndPassword(auth, email, password);
       navigate("/");
     } catch (err: any) {
-      setError(err.message || "Invalid credentials");
+      setError(err.message || "Failed to sign in.");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -30,26 +31,13 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError("");
+    
     try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      // Create user document if it doesn't exist
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-      
-      if (!userSnap.exists()) {
-        await setDoc(userRef, {
-          email: user.email,
-          displayName: user.displayName || user.email?.split('@')[0],
-          createdAt: serverTimestamp()
-        });
-      }
-      
+      await signInWithPopup(auth, googleProvider);
       navigate("/");
     } catch (err: any) {
-      setError(err.message || "Failed to sign in with Google");
+      setError(err.message || "Google sign in failed.");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -64,7 +52,7 @@ export default function Login() {
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-xl shadow-emerald-500/20">
               <Wallet className="h-9 w-9" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-white font-display">Log-in</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-white font-display">Ledger.io</h1>
             <p className="mt-2 text-slate-400">Sign in to your financial command center</p>
           </div>
 
@@ -162,7 +150,7 @@ export default function Login() {
           <p className="mt-8 text-center text-sm text-slate-500">
             New operative?{" "}
             <Link to="/register" className="font-bold text-emerald-400 transition-colors hover:text-emerald-300">
-              Register
+              Register Node
             </Link>
           </p>
         </div>

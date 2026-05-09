@@ -1,20 +1,20 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    
     // 0. Global Safety Net
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // --- Helpers ---
+    // --- Helper Functions ---
     
     function isSignedIn() {
-      return request.auth != null; // Relaxed for dev, or strictly use verified if needed
+      return request.auth != null;
     }
 
-    function isVerified() {
-      return isSignedIn() && request.auth.token.email_verified == true;
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     function isValidId(id) {
@@ -29,109 +29,79 @@ service cloud.firestore {
       return resource.data;
     }
 
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
     // --- Entity Validations ---
 
-    function isValidUser(data) {
-      return data.keys().hasAll(['email', 'createdAt']) 
-        && data.keys().size() == 2
-        && data.email is string && data.email.size() <= 200
-        && data.createdAt == request.time;
+    function isValidExpense(data) {
+      return data.amount is number && 
+             data.amount > 0 &&
+             data.category is string && data.category.size() <= 100 &&
+             data.date is string && data.date.size() <= 64 &&
+             data.description is string && data.description.size() <= 500 &&
+             data.userId == request.auth.uid &&
+             data.keys().hasAll(['amount', 'category', 'date', 'description', 'userId', 'createdAt']) &&
+             data.keys().size() == 6;
     }
 
-    function isValidExpense(data, userId) {
-      return data.keys().hasAll(['amount', 'category', 'date', 'description', 'userId', 'createdAt'])
-        && data.keys().size() == 6
-        && data.amount is number && data.amount > 0
-        && data.category is string && data.category.size() <= 50
-        && data.date is string && data.date.size() <= 100
-        && data.description is string && data.description.size() <= 500
-        && data.userId == userId
-        && data.userId == request.auth.uid
-        && data.createdAt == request.time;
+    function isValidIncome(data) {
+      return data.amount is number && 
+             data.amount > 0 &&
+             data.source is string && data.source.size() <= 100 &&
+             data.date is string && data.date.size() <= 64 &&
+             data.userId == request.auth.uid &&
+             data.keys().hasAll(['amount', 'source', 'date', 'userId', 'createdAt']) &&
+             data.keys().size() == 5;
     }
 
-    function isValidBudget(data, userId) {
-      return data.keys().hasAll(['amount', 'month', 'year', 'userId', 'createdAt'])
-        && data.keys().size() == 5
-        && data.amount is number && data.amount >= 0
-        && data.month is int && data.month >= 0 && data.month <= 11
-        && data.year is int && data.year >= 2000 && data.year <= 2100
-        && data.userId == userId
-        && data.userId == request.auth.uid
-        && data.createdAt == request.time;
+    function isValidBudget(data) {
+      return data.amount is number && 
+             data.amount >= 0 &&
+             data.month is number && data.month >= 0 && data.month <= 11 &&
+             data.year is number && data.year >= 2000 && data.year <= 2100 &&
+             data.userId == request.auth.uid;
     }
 
-    function isValidIncome(data, userId) {
-      return data.keys().hasAll(['amount', 'category', 'date', 'description', 'userId', 'createdAt'])
-        && data.keys().size() == 6
-        && data.amount is number && data.amount > 0
-        && data.category is string && data.category.size() <= 50
-        && data.date is string && data.date.size() <= 100
-        && data.description is string && data.description.size() <= 500
-        && data.userId == userId
-        && data.userId == request.auth.uid
-        && data.createdAt == request.time;
+    function isValidAccount(data) {
+      return data.name is string && data.name.size() <= 100 &&
+             data.type in ['bank', 'mobile_money'] &&
+             data.userId == request.auth.uid &&
+             data.keys().hasAll(['name', 'type', 'userId', 'createdAt', 'accountNumber', 'lastSync']) &&
+             data.keys().size() == 6;
     }
 
-    function isValidAccount(data, userId) {
-      return data.keys().hasAll(['provider', 'accountType', 'userId', 'createdAt'])
-        && data.provider is string && data.provider.size() <= 100
-        && data.accountType is string && data.accountType.size() <= 50
-        && data.userId == userId
-        && data.userId == request.auth.uid
-        && data.createdAt == request.time;
-    }
-
-    // --- Collections ---
+    // --- Collection Routes ---
 
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow create: if isOwner(userId) && isValidUser(incoming());
-      allow update: if isOwner(userId) && isValidUser(incoming()) && (
-        incoming().diff(existing()).affectedKeys().hasOnly(['email'])
-      );
+      allow read, write: if isOwner(userId);
+    }
 
-      match /expenses/{expenseId} {
-        allow list: if isOwner(userId);
-        allow get: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidId(expenseId) && isValidExpense(incoming(), userId);
-        allow update: if isOwner(userId) && isValidExpense(incoming(), userId) && (
-          incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'category', 'date', 'description'])
-        );
-        allow delete: if isOwner(userId);
-      }
+    match /expenses/{expenseId} {
+      allow read: if isSignedIn() && isOwner(existing().userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(expenseId) && isValidExpense(incoming()) && incoming().createdAt == request.time;
+      allow update: if isSignedIn() && isOwner(existing().userId) && incoming().userId == existing().userId && isValidExpense(incoming());
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+    }
 
-      match /incomes/{incomeId} {
-        allow list: if isOwner(userId);
-        allow get: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidId(incomeId) && isValidIncome(incoming(), userId);
-        allow update: if isOwner(userId) && isValidIncome(incoming(), userId) && (
-          incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'category', 'date', 'description'])
-        );
-        allow delete: if isOwner(userId);
-      }
+    match /income/{incomeId} {
+      allow read: if isSignedIn() && isOwner(existing().userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(incomeId) && isValidIncome(incoming()) && incoming().createdAt == request.time;
+      allow update: if isSignedIn() && isOwner(existing().userId) && incoming().userId == existing().userId && isValidIncome(incoming());
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+    }
 
-      match /budgets/{budgetId} {
-        allow list: if isOwner(userId);
-        allow get: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidId(budgetId) && isValidBudget(incoming(), userId);
-        allow update: if isOwner(userId) && isValidBudget(incoming(), userId) && (
-          incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'month', 'year'])
-        );
-        allow delete: if isOwner(userId);
-      }
+    match /budgets/{budgetId} {
+      allow read: if isSignedIn() && isOwner(existing().userId);
+      allow create, update: if isSignedIn() && 
+                             budgetId.startsWith(request.auth.uid) && 
+                             isValidBudget(incoming());
+    }
 
-      match /accounts/{accountId} {
-        allow list: if isOwner(userId);
-        allow get: if isOwner(userId);
-        allow create: if isOwner(userId) && isValidId(accountId) && isValidAccount(incoming(), userId);
-        allow update: if isOwner(userId) && isValidAccount(incoming(), userId);
-        allow delete: if isOwner(userId);
-      }
+    match /accounts/{accountId} {
+      allow read: if isSignedIn() && isOwner(existing().userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(accountId) && isValidAccount(incoming()) && incoming().createdAt == request.time;
+      allow delete: if isSignedIn() && isOwner(existing().userId);
     }
   }
 }

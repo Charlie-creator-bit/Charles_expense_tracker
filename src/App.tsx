@@ -4,9 +4,10 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import Profile from "./pages/Profile";
-import ConnectAccounts from "./pages/ConnectAccounts";
+import LinkedAccounts from "./pages/LinkedAccounts";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
+import { AuthProvider } from "./context/AuthContext";
 
 function Layout({ children }: { children: any }) {
   return (
@@ -24,20 +25,22 @@ function Layout({ children }: { children: any }) {
 export default function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        
-        {/* Protected Routes */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Layout><Dashboard /></Layout>} />
-          <Route path="/reports" element={<Layout><Reports /></Layout>} />
-          <Route path="/accounts" element={<Layout><ConnectAccounts /></Layout>} />
-          <Route path="/profile" element={<Layout><Profile /></Layout>} />
-        </Route>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          
+          {/* Protected Routes */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<Layout><Dashboard /></Layout>} />
+            <Route path="/reports" element={<Layout><Reports /></Layout>} />
+            <Route path="/profile" element={<Layout><Profile /></Layout>} />
+            <Route path="/accounts" element={<Layout><LinkedAccounts /></Layout>} />
+          </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
     </Router>
   );
 }

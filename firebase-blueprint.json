@@ -1,179 +1,92 @@
 {
   "entities": {
     "User": {
-      "title": "User",
-      "description": "User profile information.",
+      "title": "User Profile",
+      "description": "Public user profile information",
       "type": "object",
       "properties": {
-        "email": {
-          "type": "string",
-          "format": "email",
-          "description": "User's email address."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp when the user was created."
-        }
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["email", "createdAt"]
     },
     "Expense": {
-      "title": "Expense",
-      "description": "An individual expense entry.",
+      "title": "Expense Record",
+      "description": "An expense entry",
       "type": "object",
       "properties": {
-        "amount": {
-          "type": "number",
-          "description": "The amount spent."
-        },
-        "category": {
-          "type": "string",
-          "description": "Category of the expense (e.g. Food, Rent)."
-        },
-        "date": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Date of the expense."
-        },
-        "description": {
-          "type": "string",
-          "description": "Brief description of the expense."
-        },
-        "userId": {
-          "type": "string",
-          "description": "The UID of the user who owns this expense."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Server-side timestamp."
-        }
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "description": { "type": "string" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["amount", "category", "date", "description", "userId", "createdAt"]
-    },
-    "Budget": {
-      "title": "Budget",
-      "description": "Monthly budget limit.",
-      "type": "object",
-      "properties": {
-        "amount": {
-          "type": "number",
-          "description": "The budget amount."
-        },
-        "month": {
-          "type": "number",
-          "description": "Month index (0-11)."
-        },
-        "year": {
-          "type": "number",
-          "description": "Year of the budget."
-        },
-        "userId": {
-          "type": "string",
-          "description": "The UID of the user."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Server-side timestamp."
-        }
-      },
-      "required": ["amount", "month", "year", "userId", "createdAt"]
+      "required": ["amount", "category", "date", "userId", "createdAt"]
     },
     "Income": {
-      "title": "Income",
-      "description": "An individual income entry.",
+      "title": "Income Record",
+      "description": "An income entry",
       "type": "object",
       "properties": {
-        "amount": {
-          "type": "number",
-          "description": "The amount earned."
-        },
-        "category": {
-          "type": "string",
-          "description": "Category of the income (e.g. Salary, Freelance)."
-        },
-        "date": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Date of the income."
-        },
-        "description": {
-          "type": "string",
-          "description": "Brief description of the income."
-        },
-        "userId": {
-          "type": "string",
-          "description": "The UID of the user who owns this income."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Server-side timestamp."
-        }
+        "amount": { "type": "number" },
+        "source": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["amount", "category", "date", "description", "userId", "createdAt"]
+      "required": ["amount", "source", "date", "userId", "createdAt"]
     },
-    "ConnectedAccount": {
-      "title": "Connected Account",
-      "description": "An external bank or mobile money account linked to the tracker.",
+    "Budget": {
+      "title": "Budget Management",
+      "description": "Monthly budget targets",
       "type": "object",
       "properties": {
-        "provider": {
-          "type": "string",
-          "description": "Provider name (e.g., MTN, Telecel, GCB Bank)."
-        },
-        "accountType": {
-          "type": "string",
-          "description": "Type of account (bank or mobile_money)."
-        },
-        "accountMask": {
-          "type": "string",
-          "description": "Last few digits of the account for display."
-        },
-        "status": {
-          "type": "string",
-          "description": "Current sync status (active, disconnected, error)."
-        },
-        "lastSynced": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Last time transactions were pulled."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Owner UID."
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Creation timestamp."
-        }
+        "amount": { "type": "number" },
+        "month": { "type": "number" },
+        "year": { "type": "number" },
+        "userId": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["provider", "accountType", "userId", "createdAt"]
+      "required": ["amount", "month", "year", "userId"]
+    },
+    "Account": {
+      "title": "Linked Account",
+      "description": "Linked bank or mobile money account",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["bank", "mobile_money"] },
+        "accountNumber": { "type": "string" },
+        "lastSync": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "type", "userId", "createdAt"]
     }
   },
   "firestore": {
-    "/users/{userId}": {
+    "users": {
       "schema": "User",
-      "description": "User profile data."
+      "description": "Collection of user profiles"
     },
-    "/users/{userId}/expenses/{expenseId}": {
+    "expenses": {
       "schema": "Expense",
-      "description": "Expenses for a specific user."
+      "description": "Collection of all expenses"
     },
-    "/users/{userId}/incomes/{incomeId}": {
+    "income": {
       "schema": "Income",
-      "description": "Incomes for a specific user."
+      "description": "Collection of all income entries"
     },
-    "/users/{userId}/budgets/{budgetId}": {
+    "budgets": {
       "schema": "Budget",
-      "description": "Budgets for a specific user."
+      "description": "Collection of user budgets"
     },
-    "/users/{userId}/accounts/{accountId}": {
-      "schema": "ConnectedAccount",
-      "description": "Linked financial accounts."
+    "accounts": {
+      "schema": "Account",
+      "description": "Collection of linked banking and MoMo accounts"
     }
   }
 }

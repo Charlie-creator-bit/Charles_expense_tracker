@@ -1,31 +1,27 @@
-# Security Specification - Ledger.io
+# Security Specification for Ledger.io
 
 ## Data Invariants
-- Users can only access documents where the `userId` matches their `UID` or that reside within their own `/users/{userId}` subcollection path.
-- All timestamps (`createdAt`, `updatedAt`) must be set using the server time `request.time`.
-- `amount` in `Expense` and `Budget` must be a positive number.
-- `month` in `Budget` must be between 0 and 11.
-- `category` in `Expense` must be a non-empty string.
+- A transaction (expense/income) must belong to a valid user (`userId` match).
+- A user can only read and write their own data.
+- Budget IDs are strictly formatted as `{userId}_{year}_{month}`.
+- Timestamps must be server-generated on create.
 
-## Dirty Dozen Payloads (Rejection Tests)
+## The Dirty Dozen Payloads (Rejection Tests)
+1. **Identity Spoofing**: Attempt to create an expense where `userId` is NOT the auth user ID.
+2. **PII Leak**: Attempt to read the `users` collection without being the owner of the document.
+3. **Ghost Field Injection**: Attempt to write a transaction with an unauthorized field like `isVerified: true`.
+4. **State Shortcutting**: Attempt to update a budget for a different user.
+5. **Resource Poisoning**: Use a 2KB string as a transaction ID.
+6. **Value Poisoning**: Set `amount` as a string instead of a number.
+7. **Temporal Fraud**: Supply a manual `createdAt` date instead of `serverTimestamp()`.
+8. **Orphaned Writes**: Create an account connection without being signed in.
+9. **Identity Integrity update**: Attempt to change the `userId` field of an existing expense document.
+10. **Unbounded List Exhaustion**: Attempt to query all expenses without a filter on `userId`.
+11. **Account Poisoning**: Send a linked account with an invalid `type` (not bank or mobile_money).
+12. **Out of Range data**: Set a budget month to `13`.
 
-1. **Identity Spoofing**: Attempt to create an expense for another user.
-   ```json
-   { "amount": 50, "userId": "victim_uid", "category": "Food", "description": "Lies", "date": "...", "createdAt": "serverTimestamp" }
-   ```
-2. **Accessing Other User's Data**: Authenticated User A trying to read User B's `/users/userB/expenses/expense1`.
-3. **Invalid ID Poisoning**: Using a 2KB string as a document ID.
-4. **Incorrect Type**: Setting `amount` as a string `"100"` instead of a number.
-5. **Timestamp Replacement**: Trying to set `createdAt` to a past date instead of `request.time`.
-6. **Shadow Fields**: Adding an `isVerified: true` field to the User profile that doesn't exist in schema.
-7. **Budget Range Abuse**: Setting `month` to `13`.
-8. **Negative Amount**: Setting `amount` to `-500`.
-9. **Unauthenticated Write**: Trying to create an expense without a login token.
-10. **Immutable Field Update**: User trying to change `userId` after creation of an expense.
-11. **PII Leakage**: Generic `allow read: if isSignedIn()` allowing any user to scrape all emails.
-12. **Status Shortcutting**: (Not applicable here as no status field, but could be "changing category to an admin-only value").
-
-## Test Plan
-- Run `firestore.rules.test.ts` to verify all rejection cases.
-- Verify `isValidId` and `isValid[Entity]` helpers are applied.
-- Ensure `hasOnly()` is used on updates to prevent rogue fields.
+## The Test Runner (firestore.rules.test.ts)
+```typescript
+// Skeleton for security testing
+// All "Dirty Dozen" payloads should return PERMISSION_DENIED
+```

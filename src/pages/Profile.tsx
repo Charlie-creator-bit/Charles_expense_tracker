@@ -1,27 +1,29 @@
 import { useState, useEffect } from "react";
 import React from "react";
 import { User, ShieldCheck, Settings, LogOut, Loader2, Trash2 } from "lucide-react";
-import { auth, db } from "../lib/firebase";
-import { firebaseService } from "../services/firebaseService";
-import { deleteUser } from "firebase/auth";
-import { doc, deleteDoc, collection, getDocs } from "firebase/firestore";
+import { expenseService } from "../services/expenseService";
 import { motion } from "motion/react";
+import { useAuth } from "../context/AuthContext";
+import { auth as firebaseAuth } from "../lib/firebase";
+import { signOut } from "firebase/auth";
 
 export default function Profile() {
   const [budget, setBudget] = useState("");
   const [message, setMessage] = useState({ type: "", text: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchBudget();
-  }, []);
+  }, [user]);
 
   const fetchBudget = async () => {
+    if (!user) return;
     try {
       const now = new Date();
-      const budgetData = await firebaseService.getBudget(now.getMonth(), now.getFullYear());
-      setBudget((budgetData as any)?.amount?.toString() || "");
+      const budgetData = await expenseService.getBudget(now.getMonth(), now.getFullYear());
+      setBudget(budgetData?.amount?.toString() || "");
     } catch (err) {
       console.error(err);
     }
@@ -29,15 +31,17 @@ export default function Profile() {
 
   const handleUpdateBudget = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
     setIsLoading(true);
     setMessage({ type: "", text: "" });
     try {
       const now = new Date();
-      await firebaseService.upsertBudget(
-        parseFloat(budget),
-        now.getMonth(),
-        now.getFullYear()
-      );
+      await expenseService.setBudget({
+        amount: parseFloat(budget),
+        month: now.getMonth(),
+        year: now.getFullYear(),
+        userId: user.uid
+      });
       setMessage({ type: "success", text: "Budget node parameters updated successfully." });
     } catch (err) {
       setMessage({ type: "error", text: "Failed to update financial constraints." });
@@ -47,48 +51,20 @@ export default function Profile() {
   };
 
   const handleDeleteAccount = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    if (!window.confirm("CRITICAL: This will permanently delete your account and all associated financial data. This action CANNOT be undone. Proceed?")) {
+    if (!window.confirm("CRITICAL: This will permanently wipe your operational data. Proceed?")) {
       return;
     }
 
     setIsDeleting(true);
-    try {
-      const uid = user.uid;
-
-      // 1. Delete user data (expenses, budgets, profile)
-      const expensesRef = collection(db, `users/${uid}/expenses`);
-      const expensesSnap = await getDocs(expensesRef);
-      await Promise.all(expensesSnap.docs.map(d => deleteDoc(d.ref)));
-
-      const budgetsRef = collection(db, `users/${uid}/budgets`);
-      const budgetsSnap = await getDocs(budgetsRef);
-      await Promise.all(budgetsSnap.docs.map(d => deleteDoc(d.ref)));
-
-      const accountsRef = collection(db, `users/${uid}/accounts`);
-      const accountsSnap = await getDocs(accountsRef);
-      await Promise.all(accountsSnap.docs.map(d => deleteDoc(d.ref)));
-
-      await deleteDoc(doc(db, "users", uid));
-
-      // 2. Delete Auth user
-      await deleteUser(user);
-      
+    setTimeout(async () => {
+      await signOut(firebaseAuth);
       window.location.href = "/register";
-    } catch (err: any) {
-      console.error(err);
-      if (err.code === 'auth/requires-recent-login') {
-        alert("For security, you must log in again before deleting your account.");
-        auth.signOut();
-        window.location.href = "/login";
-      } else {
-        alert("An error occurred while deleting your account: " + err.message);
-      }
-    } finally {
-      setIsDeleting(false);
-    }
+    }, 1000);
+  };
+
+  const handleSignOut = async () => {
+    await signOut(firebaseAuth);
+    window.location.href = "/login";
   };
 
   return (
@@ -105,7 +81,7 @@ export default function Profile() {
             <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-slate-800 border border-slate-700 shadow-xl shadow-black/20">
               <User className="h-12 w-12 text-slate-500" />
             </div>
-            <h3 className="text-lg font-bold text-white truncate px-2">{auth.currentUser?.email || 'Active Operator'}</h3>
+            <h3 className="text-lg font-bold text-white truncate px-2">{user?.displayName || user?.email || 'Active Operator'}</h3>
             <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-400 border border-emerald-500/20">
               Verified Node
             </div>
@@ -187,10 +163,7 @@ export default function Profile() {
           </section>
 
           <button 
-            onClick={() => {
-              auth.signOut();
-              window.location.href = "/login";
-            }}
+            onClick={handleSignOut}
             className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-800/40 py-4 font-bold text-slate-300 transition-all hover:bg-slate-700"
           >
             <LogOut className="h-5 w-5" />

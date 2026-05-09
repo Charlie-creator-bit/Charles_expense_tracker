@@ -3,8 +3,7 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Wallet, Mail, Lock, Loader2, ArrowRight, Eye, EyeOff, User } from "lucide-react";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "../lib/firebase";
+import { auth } from "../lib/firebase";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -19,23 +18,15 @@ export default function Register() {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+    
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
       if (displayName) {
-        await updateProfile(user, { displayName });
+        await updateProfile(userCredential.user, { displayName });
       }
-
-      await setDoc(doc(db, "users", user.uid), {
-        email: user.email,
-        displayName: displayName || user.email?.split('@')[0],
-        createdAt: serverTimestamp()
-      });
-
       navigate("/");
     } catch (err: any) {
-      setError(err.message || "Registration failed");
+      setError(err.message || "Failed to register.");
     } finally {
       setIsLoading(false);
     }

@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { LogOut, LayoutDashboard, PieChart, User, Wallet, ChevronRight, CreditCard } from "lucide-react";
+import { LogOut, LayoutDashboard, PieChart, User, Wallet, ChevronRight, Landmark } from "lucide-react";
 import { cn } from "../lib/utils";
+import { signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
 
 export default function Navbar() {
@@ -9,17 +10,17 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
-      await auth.signOut();
+      await signOut(auth);
       navigate("/login");
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error("Logout failed", error);
     }
   };
 
   const menuItems = [
     { to: "/", icon: <LayoutDashboard className="h-5 w-5" />, label: "Dashboard" },
     { to: "/reports", icon: <PieChart className="h-5 w-5" />, label: "Reports" },
-    { to: "/accounts", icon: <CreditCard className="h-5 w-5" />, label: "Accounts" },
+    { to: "/accounts", icon: <Landmark className="h-5 w-5" />, label: "Accounts" },
     { to: "/profile", icon: <User className="h-5 w-5" />, label: "Profile" },
   ];
 

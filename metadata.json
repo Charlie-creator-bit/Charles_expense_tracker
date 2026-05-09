@@ -1,6 +1,6 @@
 {
-  "name": "Ledger.io - Firebase Expense Tracker",
-  "description": "A production-grade expense tracking application with Firebase auth, Firestore database, budgeting, and visual reports.",
+  "name": "Ledger.io",
+  "description": "A production-grade expense tracking application with budgeting and visual reports.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }
