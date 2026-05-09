@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { Plus, Wallet, Trash2, TrendingUp, ShoppingBag, Utensils, Car, Home, Zap, MoreHorizontal, RefreshCw } from "lucide-react";
+import { Plus, Wallet, Trash2, TrendingUp, ShoppingCart, Utensils, Car, Home, Zap, MoreHorizontal, RefreshCw } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { expenseService, Expense, Income, Budget } from "../services/expenseService";
 import { formatCurrency, cn } from "../lib/utils";
@@ -11,7 +11,7 @@ import { useAuth } from "../context/AuthContext";
 const CATEGORIES = [
   { name: "Food", icon: <Utensils className="h-4 w-4" />, color: "#6366f1" },
   { name: "Transport", icon: <Car className="h-4 w-4" />, color: "#ec4899" },
-  { name: "Shopping", icon: <ShoppingBag className="h-4 w-4" />, color: "#f59e0b" },
+  { name: "Shopping", icon: <ShoppingCart className="h-4 w-4" />, color: "#f59e0b" },
   { name: "Housing", icon: <Home className="h-4 w-4" />, color: "#10b981" },
   { name: "Bills", icon: <Zap className="h-4 w-4" />, color: "#ef4444" },
   { name: "Other", icon: <MoreHorizontal className="h-4 w-4" />, color: "#64748b" },
@@ -138,13 +138,26 @@ export default function Dashboard() {
   };
 
   const handleDeleteTransaction = async (id: string, type: 'expense' | 'income') => {
-    if (window.confirm("Delete this transaction?")) {
+    if (window.confirm("Verify: Permanently purge this transaction record?")) {
+      // Optimistic Update: Remove from UI immediately for better responsiveness
       if (type === 'expense') {
-        await expenseService.deleteExpense(id);
+        setExpenses(prev => prev.filter(e => e.id !== id));
       } else {
-        await expenseService.deleteIncome(id);
+        setIncomes(prev => prev.filter(i => i.id !== id));
       }
-      fetchData();
+
+      try {
+        if (type === 'expense') {
+          await expenseService.deleteExpense(id);
+        } else {
+          await expenseService.deleteIncome(id);
+        }
+        // No need to fetchData() here because we already updated the state optimistically
+      } catch (err) {
+        console.error("Deletion failed:", err);
+        // Revert state if the server operation fails
+        fetchData();
+      }
     }
   };
 
@@ -288,7 +301,8 @@ export default function Dashboard() {
                     <td className="px-6 py-4 text-right">
                       <button 
                         onClick={() => handleDeleteTransaction(tx.id, tx.type)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-rose-500/10 text-slate-500 hover:text-rose-400"
+                        className="sm:opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg border border-transparent hover:border-rose-500/20 hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 active:scale-90"
+                        title="Delete transaction"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

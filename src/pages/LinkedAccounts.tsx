@@ -7,6 +7,8 @@ import { useAuth } from "../context/AuthContext";
 
 export default function LinkedAccounts() {
   const [accounts, setAccounts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLinking, setIsLinking] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [linkMode, setLinkMode] = useState<"bank" | "mobile_money" | null>(null);
@@ -18,8 +20,13 @@ export default function LinkedAccounts() {
 
   const fetchAccounts = async () => {
     if (!user) return;
-    const data = await expenseService.getLinkedAccounts();
-    setAccounts(data);
+    setIsLoading(true);
+    try {
+      const data = await expenseService.getLinkedAccounts();
+      setAccounts(data);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSync = async () => {
@@ -37,28 +44,48 @@ export default function LinkedAccounts() {
 
   const handleCreateConnection = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!linkMode) return;
+    
+    setIsLinking(true);
     try {
-      // 1. Fetch Link Token from Backend
-      const response = await fetch("/api/banking/create-link-token", { method: "POST" });
-      const { link_token } = await response.json();
+      // 1. Get security link token from backend
+      console.log("Requesting link token from backend...");
+      const linkToken = await expenseService.createLinkToken();
       
-      console.log("Initializing secure link with token:", link_token);
+      // 2. Simulate User Auth via Provider (Plaid/Mono/Momo)
+      // In a real app, you'd initialize the SDK here:
+      // const plaid = usePlaidLink({ token: linkToken, onSuccess: ... })
+      console.log("Security Handshake initialized with token:", linkToken);
       
-      // 2. Simulate the user completing the secure popup/web-view
-      setTimeout(async () => {
-        const name = linkMode === "bank" ? "Standard Chartered" : "MTN Momo";
-        await expenseService.linkAccount({
-          type: linkMode,
-          name: name,
-          accountNumber: "****" + Math.floor(1000 + Math.random() * 9000),
-          lastSync: new Date().toISOString(),
-          providerToken: "tok_" + Math.random().toString(36).substr(2, 12)
-        });
-        setShowLinkModal(false);
-        fetchAccounts();
-      }, 1500);
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate UI interaction
+      
+      const simulatedPublicToken = "pub_auth_" + Math.random().toString(36).substr(2, 16);
+      const metadata = {
+        institution: linkMode === "bank" ? "Standard Chartered" : "MTN Ghana",
+        account_name: linkMode === "bank" ? "Savings Account" : "MoMo Wallet",
+        account_id: "id_" + Math.floor(Math.random() * 100000)
+      };
+
+      // 3. Exchange public token for permanent access token
+      console.log("Exchanging public token for permanent access...");
+      const authData = await expenseService.exchangePublicToken(simulatedPublicToken, metadata);
+      
+      // 4. Store linked account details securely
+      await expenseService.linkAccount({
+        type: linkMode,
+        name: metadata.institution,
+        accountNumber: "****" + Math.floor(1000 + Math.random() * 9000),
+        lastSync: new Date().toISOString(),
+        accessToken: authData.access_token,
+        itemId: authData.item_id
+      });
+
+      setShowLinkModal(false);
+      await fetchAccounts();
     } catch (err) {
       console.error("Link initiation failed", err);
+    } finally {
+      setIsLinking(false);
     }
   };
 
@@ -80,7 +107,11 @@ export default function LinkedAccounts() {
       </header>
 
       <div className="grid gap-6">
-        {accounts.map((account) => (
+        {isLoading ? (
+          [...Array(2)].map((_, i) => (
+            <div key={i} className="glass-card h-24 animate-pulse bg-slate-800/50" />
+          ))
+        ) : accounts.map((account) => (
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -183,9 +214,17 @@ export default function LinkedAccounts() {
                 </div>
                 <button
                   type="submit"
-                  className="w-full rounded-xl bg-emerald-500 py-4 font-bold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-400"
+                  disabled={isLinking}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-500 py-4 font-bold text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-400 disabled:opacity-50"
                 >
-                  Continue to Secure Link
+                  {isLinking ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      Establishing Secure Link...
+                    </>
+                  ) : (
+                    "Continue to Secure Link"
+                  )}
                 </button>
               </form>
             )}

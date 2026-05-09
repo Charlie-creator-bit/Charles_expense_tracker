@@ -57,15 +57,15 @@ service cloud.firestore {
              data.amount >= 0 &&
              data.month is number && data.month >= 0 && data.month <= 11 &&
              data.year is number && data.year >= 2000 && data.year <= 2100 &&
-             data.userId == request.auth.uid;
+             data.userId == request.auth.uid &&
+             data.keys().hasAll(['amount', 'month', 'year', 'userId']);
     }
 
     function isValidAccount(data) {
       return data.name is string && data.name.size() <= 100 &&
              data.type in ['bank', 'mobile_money'] &&
              data.userId == request.auth.uid &&
-             data.keys().hasAll(['name', 'type', 'userId', 'createdAt', 'accountNumber', 'lastSync']) &&
-             data.keys().size() == 6;
+             data.keys().hasAll(['name', 'type', 'userId', 'createdAt', 'accountNumber', 'lastSync']);
     }
 
     // --- Collection Routes ---
@@ -75,7 +75,7 @@ service cloud.firestore {
     }
 
     match /expenses/{expenseId} {
-      allow read: if isSignedIn() && isOwner(existing().userId);
+      allow read: if isSignedIn() && (resource == null || isOwner(existing().userId));
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && isValidId(expenseId) && isValidExpense(incoming()) && incoming().createdAt == request.time;
       allow update: if isSignedIn() && isOwner(existing().userId) && incoming().userId == existing().userId && isValidExpense(incoming());
@@ -83,7 +83,7 @@ service cloud.firestore {
     }
 
     match /income/{incomeId} {
-      allow read: if isSignedIn() && isOwner(existing().userId);
+      allow read: if isSignedIn() && (resource == null || isOwner(existing().userId));
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && isValidId(incomeId) && isValidIncome(incoming()) && incoming().createdAt == request.time;
       allow update: if isSignedIn() && isOwner(existing().userId) && incoming().userId == existing().userId && isValidIncome(incoming());
@@ -91,14 +91,14 @@ service cloud.firestore {
     }
 
     match /budgets/{budgetId} {
-      allow read: if isSignedIn() && isOwner(existing().userId);
+      allow read: if isSignedIn() && (resource == null || isOwner(existing().userId));
       allow create, update: if isSignedIn() && 
                              budgetId.startsWith(request.auth.uid) && 
                              isValidBudget(incoming());
     }
 
     match /accounts/{accountId} {
-      allow read: if isSignedIn() && isOwner(existing().userId);
+      allow read: if isSignedIn() && (resource == null || isOwner(existing().userId));
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && isValidId(accountId) && isValidAccount(incoming()) && incoming().createdAt == request.time;
       allow delete: if isSignedIn() && isOwner(existing().userId);

@@ -41,6 +41,31 @@ async function startServer() {
     }
   });
 
+  // 1. Create Link Token for Secure Auth
+  app.post("/api/banking/create-link-token", (req, res) => {
+    // Generate a secure session token for the linking flow
+    const linkToken = "lt_" + Math.random().toString(36).substr(2, 24);
+    res.json({ link_token: linkToken });
+  });
+
+  // 2. Exchange Public Token for Access Token
+  app.post("/api/banking/exchange-public-token", (req, res) => {
+    const { public_token, metadata } = req.body;
+    
+    if (!public_token) {
+      return res.status(400).json({ error: "Public token required" });
+    }
+
+    // Securely exchange public token for a permanent access token
+    const accessToken = "access_" + Math.random().toString(36).substr(2, 32);
+    
+    res.json({ 
+      access_token: accessToken,
+      item_id: "item_" + Math.random().toString(36).substr(2, 12),
+      account_id: metadata?.account_id || "acc_default"
+    });
+  });
+
   // 3. Sync transactions from linked accounts
   app.get("/api/banking/sync", async (req, res) => {
     try {

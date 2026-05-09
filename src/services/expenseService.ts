@@ -90,6 +90,21 @@ export const expenseService = {
     }
   },
 
+  createLinkToken: async (): Promise<string> => {
+    const response = await fetch("/api/banking/create-link-token", { method: "POST" });
+    const { link_token } = await response.json();
+    return link_token;
+  },
+
+  exchangePublicToken: async (publicToken: string, metadata: any): Promise<any> => {
+    const response = await fetch("/api/banking/exchange-public-token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ public_token: publicToken, metadata })
+    });
+    return await response.json();
+  },
+
   linkAccount: async (account: any): Promise<void> => {
     const userId = auth.currentUser?.uid;
     if (!userId) return;
@@ -151,11 +166,11 @@ export const expenseService = {
     try {
       const q = query(
         collection(db, path), 
-        where("userId", "==", userId),
-        orderBy("date", "desc")
+        where("userId", "==", userId)
       );
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense));
+      const expenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense));
+      return expenses.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     } catch (error) {
       handleFirestoreError(error, OperationType.LIST, path);
       return [];
@@ -195,11 +210,11 @@ export const expenseService = {
     try {
       const q = query(
         collection(db, path), 
-        where("userId", "==", userId),
-        orderBy("date", "desc")
+        where("userId", "==", userId)
       );
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Income));
+      const income = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Income));
+      return income.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     } catch (error) {
       handleFirestoreError(error, OperationType.LIST, path);
       return [];

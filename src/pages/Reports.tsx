@@ -220,6 +220,50 @@ export default function Reports() {
           </button>
         </div>
       </div>
+      <div className="mt-8 grid gap-8 lg:grid-cols-1">
+        <div className="glass-panel p-8">
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-white font-display">Income History</h3>
+            <p className="text-xs text-slate-500">Chronological record of all revenue inflows.</p>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-slate-700/30 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                  <th className="pb-4 px-4">Date</th>
+                  <th className="pb-4 px-4">Source</th>
+                  <th className="pb-4 px-4 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                {incomes
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .map((income) => (
+                    <tr key={income.id} className="border-b border-slate-700/10 transition-colors hover:bg-slate-700/20">
+                      <td className="py-4 px-4 text-slate-400">
+                        {format(new Date(income.date), "MMM d, yyyy")}
+                      </td>
+                      <td className="py-4 px-4 font-medium text-white underline decoration-emerald-500/20 underline-offset-4">
+                        {income.source}
+                      </td>
+                      <td className="py-4 px-4 text-right font-mono font-bold text-emerald-400">
+                        +{formatCurrency(income.amount)}
+                      </td>
+                    </tr>
+                  ))}
+                {incomes.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="py-20 text-center text-slate-500">
+                      No income records found in history.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
