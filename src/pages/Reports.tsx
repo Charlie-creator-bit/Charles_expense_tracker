@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { format, subMonths } from "date-fns";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart } from "recharts";
-import { TrendingUp, TrendingDown, PieChart as PieChartIcon, BarChart as BarChartIcon, AlertCircle } from "lucide-react";
-import { expenseService } from "../services/expenseService";
+import { TrendingUp, TrendingDown, PieChart as PieChartIcon, BarChart as BarChartIcon, AlertCircle, Trash2 } from "lucide-react";
+import { expenseService, Income } from "../services/expenseService";
 import { formatCurrency } from "../lib/utils";
 import { useAuth } from "../context/AuthContext";
 
 export default function Reports() {
   const [expenses, setExpenses] = useState<any[]>([]);
-  const [incomes, setIncomes] = useState<any[]>([]);
+  const [incomes, setIncomes] = useState<Income[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
@@ -29,6 +29,19 @@ export default function Reports() {
       console.error(err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteIncome = async (id: string) => {
+    if (window.confirm("Permanently delete this income record?")) {
+      // Optimistic update
+      setIncomes(prev => prev.filter(inc => inc.id !== id));
+      try {
+        await expenseService.deleteIncome(id);
+      } catch (err) {
+        console.error("Deletion failed:", err);
+        fetchData();
+      }
     }
   };
 
@@ -234,13 +247,14 @@ export default function Reports() {
                   <th className="pb-4 px-4">Date</th>
                   <th className="pb-4 px-4">Source</th>
                   <th className="pb-4 px-4 text-right">Amount</th>
+                  <th className="pb-4 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
                 {incomes
                   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                   .map((income) => (
-                    <tr key={income.id} className="border-b border-slate-700/10 transition-colors hover:bg-slate-700/20">
+                    <tr key={income.id} className="border-b border-slate-700/10 transition-colors hover:bg-slate-700/20 group">
                       <td className="py-4 px-4 text-slate-400">
                         {format(new Date(income.date), "MMM d, yyyy")}
                       </td>
@@ -250,11 +264,20 @@ export default function Reports() {
                       <td className="py-4 px-4 text-right font-mono font-bold text-emerald-400">
                         +{formatCurrency(income.amount)}
                       </td>
+                      <td className="py-4 px-4 text-right">
+                        <button 
+                          onClick={() => handleDeleteIncome(income.id!)}
+                          className="p-1.5 rounded-lg border border-transparent hover:border-rose-500/20 hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 active:scale-90 transition-all"
+                          title="Delete income record"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 {incomes.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="py-20 text-center text-slate-500">
+                    <td colSpan={4} className="py-20 text-center text-slate-500">
                       No income records found in history.
                     </td>
                   </tr>

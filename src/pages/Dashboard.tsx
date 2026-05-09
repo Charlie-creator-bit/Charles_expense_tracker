@@ -301,7 +301,7 @@ export default function Dashboard() {
                     <td className="px-6 py-4 text-right">
                       <button 
                         onClick={() => handleDeleteTransaction(tx.id, tx.type)}
-                        className="sm:opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg border border-transparent hover:border-rose-500/20 hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 active:scale-90"
+                        className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 hover:border-rose-500/20 hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 active:scale-90 transition-all"
                         title="Delete transaction"
                       >
                         <Trash2 className="h-4 w-4" />
