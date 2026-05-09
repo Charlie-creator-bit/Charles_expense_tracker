@@ -70,8 +70,8 @@ export default function Profile() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
       <header className="mb-12">
-        <h1 className="text-3xl font-bold tracking-tight text-white font-display">Identity Settings</h1>
-        <p className="text-slate-400">Configure your operational parameters and financial thresholds.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl font-display">Identity Settings</h1>
+        <p className="text-sm text-slate-400 sm:text-base">Configure your operational parameters and financial thresholds.</p>
       </header>
 
       <div className="grid gap-8 md:grid-cols-3">

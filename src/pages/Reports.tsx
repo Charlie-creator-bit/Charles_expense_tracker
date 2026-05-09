@@ -96,11 +96,11 @@ export default function Reports() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
       <header className="mb-10">
-        <h1 className="text-3xl font-bold tracking-tight text-white font-display">Financial Analysis</h1>
-        <p className="text-slate-400">Detailed performance report for your income and expenditure nodes.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl font-display">Financial Analysis</h1>
+        <p className="text-sm text-slate-400 sm:text-base">Detailed performance report for your income and expenditure nodes.</p>
       </header>
 
-      <div className="mb-8 grid gap-6 md:grid-cols-4">
+      <div className="mb-8 grid gap-6 sm:grid-cols-2 md:grid-cols-4">
         <div className="glass-card p-6 md:col-span-1">
           <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</p>
           <div className="flex items-center gap-2">
@@ -127,9 +127,9 @@ export default function Reports() {
         </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        <div className="glass-panel p-8 lg:col-span-2">
-          <div className="mb-8 flex items-center justify-between">
+      <div className="grid gap-8 lg:grid-cols-3 items-stretch">
+        <div className="glass-panel p-6 sm:p-8 lg:col-span-2">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-lg font-bold text-white">Cashflow Flux</h3>
               <p className="text-xs text-slate-500">6-Month historical income vs expenses</p>
@@ -236,12 +236,12 @@ export default function Reports() {
       <div className="mt-8 grid gap-8 lg:grid-cols-1">
         <div className="glass-panel p-8">
           <div className="mb-8">
-            <h3 className="text-xl font-bold text-white font-display">Income History</h3>
+            <h3 className="text-xl font-bold text-white font-display uppercase tracking-tight">Income Transactions</h3>
             <p className="text-xs text-slate-500">Chronological record of all revenue inflows.</p>
           </div>
           
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <table className="w-full min-w-[500px] text-left">
               <thead>
                 <tr className="border-b border-slate-700/30 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                   <th className="pb-4 px-4">Date</th>

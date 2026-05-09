@@ -91,15 +91,15 @@ export default function LinkedAccounts() {
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
-      <header className="mb-10 flex items-center justify-between">
+      <header className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white font-display">Linked Accounts</h1>
-          <p className="text-slate-400">Connect your bank and mobile money for automated tracking.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl font-display">Linked Accounts</h1>
+          <p className="text-sm text-slate-400">Connect your bank and mobile money for automated tracking.</p>
         </div>
         <button
           onClick={handleSync}
           disabled={isSyncing || accounts.length === 0}
-          className="flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-2 font-bold text-slate-300 border border-slate-700 hover:bg-slate-700 disabled:opacity-50"
+          className="flex items-center justify-center gap-2 rounded-xl bg-slate-800 px-4 py-3 font-bold text-slate-300 border border-slate-700 hover:bg-slate-700 disabled:opacity-50 sm:py-2"
         >
           <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
           Sync All

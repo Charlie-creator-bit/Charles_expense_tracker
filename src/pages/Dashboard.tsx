@@ -170,35 +170,35 @@ export default function Dashboard() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
-      <header className="mb-10 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+      <header className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">Good morning, {userName}</h1>
-          <p className="text-slate-400">Here's your financial overview for {format(new Date(), "MMMM yyyy")}.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Good morning, {userName}</h1>
+          <p className="text-sm text-slate-400 sm:text-base">Here's your financial overview for {format(new Date(), "MMMM yyyy")}.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           {linkedAccounts.length > 0 && (
             <button
               onClick={handleSync}
               disabled={isSyncing}
-              className="flex items-center justify-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 font-semibold text-blue-400 transition-all hover:bg-blue-500/20 active:scale-95 disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 font-semibold text-blue-400 transition-all hover:bg-blue-500/20 active:scale-95 disabled:opacity-50 sm:flex-none"
             >
               <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
-              <span className="hidden sm:inline">Sync Accounts</span>
+              <span className="sm:inline">Sync</span>
             </button>
           )}
           <button
             onClick={() => setShowIncomeModal(true)}
-            className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-6 py-3 font-semibold text-emerald-400 transition-all hover:bg-emerald-500/20 active:scale-95"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 font-semibold text-emerald-400 transition-all hover:bg-emerald-500/20 active:scale-95 sm:flex-none sm:px-6"
           >
             <TrendingUp className="h-5 w-5" />
-            Add Income
+            <span className="whitespace-nowrap">Add Income</span>
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center justify-center gap-2 rounded-xl bg-rose-500 px-6 py-3 font-semibold text-white shadow-lg shadow-rose-500/20 transition-all hover:bg-rose-400 active:scale-95"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-500 px-4 py-3 font-semibold text-white shadow-lg shadow-rose-500/20 transition-all hover:bg-rose-400 active:scale-95 sm:flex-none sm:px-6"
           >
             <Plus className="h-5 w-5" />
-            New Expense
+            <span className="whitespace-nowrap">New Expense</span>
           </button>
         </div>
       </header>
@@ -253,8 +253,8 @@ export default function Dashboard() {
         {/* Recent Transactions */}
         <section className="lg:col-span-3">
           <h3 className="mb-4 px-2 text-lg font-bold text-white">Recent Activity</h3>
-          <div className="glass-panel min-h-[400px]">
-            <table className="w-full text-left">
+          <div className="glass-panel min-h-[400px] overflow-x-auto">
+            <table className="w-full min-w-[600px] text-left">
               <thead>
                 <tr className="border-b border-slate-700/30 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                   <th className="px-6 py-4">Transaction</th>

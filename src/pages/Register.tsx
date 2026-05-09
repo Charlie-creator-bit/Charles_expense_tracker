@@ -43,7 +43,7 @@ export default function Register() {
           <p className="text-slate-400">Initialize your decentralized financial record.</p>
         </div>
 
-        <div className="glass-panel p-8">
+        <div className="glass-panel p-6 sm:p-8">
           {error && (
             <div className="mb-6 rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-xs font-medium text-rose-400">
               {error}

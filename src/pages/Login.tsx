@@ -47,7 +47,7 @@ export default function Login() {
       <div className="absolute inset-0 bg-gradient-to-br from-[#0f172a] via-[#0f172a] to-[#1e1b4b]"></div>
       
       <div className="relative w-full max-w-md">
-        <div className="glass-card overflow-hidden p-10 backdrop-blur-2xl">
+        <div className="glass-card overflow-hidden p-6 sm:p-10 backdrop-blur-2xl">
           <div className="mb-10 text-center">
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-xl shadow-emerald-500/20">
               <Wallet className="h-9 w-9" />
