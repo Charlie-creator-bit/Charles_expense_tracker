@@ -1,6 +1,6 @@
 {
   "name": "Ledger.io",
-  "description": "A production-grade expense tracking application with budgeting and visual reports.",
+  "description": "Mobile-first financial tracker that uses AI to parse SMS alerts into transaction records automatically.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

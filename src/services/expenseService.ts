@@ -9,7 +9,8 @@ import {
   setDoc, 
   getDoc,
   serverTimestamp,
-  orderBy
+  orderBy,
+  updateDoc
 } from "firebase/firestore";
 import { db, auth } from "../lib/firebase";
 
@@ -74,7 +75,120 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 }
 
+export interface SMSHistoryRecord {
+  id: string;
+  originalText: string;
+  parsedData?: any;
+  status: "success" | "failed";
+  transactionId?: string;
+  userId: string;
+  createdAt: any;
+}
+
+export interface Reminder {
+  id: string;
+  title: string;
+  time: string;
+  isCompleted: boolean;
+  userId: string;
+  createdAt: any;
+}
+
 export const expenseService = {
+  addReminder: async (reminder: Omit<Reminder, "id" | "userId" | "createdAt" | "isCompleted">): Promise<void> => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+
+    const path = "reminders";
+    try {
+      await addDoc(collection(db, path), {
+        ...reminder,
+        isCompleted: false,
+        userId,
+        createdAt: serverTimestamp()
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, path);
+    }
+  },
+
+  getReminders: async (): Promise<Reminder[]> => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return [];
+
+    const path = "reminders";
+    try {
+      const q = query(
+        collection(db, path),
+        where("userId", "==", userId),
+        orderBy("time", "asc")
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      } as Reminder));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, path);
+      return [];
+    }
+  },
+
+  deleteReminder: async (id: string): Promise<void> => {
+    const path = "reminders";
+    try {
+      await deleteDoc(doc(db, path, id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, path);
+    }
+  },
+
+  toggleReminder: async (id: string, isCompleted: boolean): Promise<void> => {
+    const path = "reminders";
+    try {
+      await updateDoc(doc(db, path, id), { isCompleted });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
+
+  addSMSHistory: async (record: Omit<SMSHistoryRecord, "id" | "userId" | "createdAt">): Promise<void> => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+
+    const path = "smsHistory";
+    try {
+      await addDoc(collection(db, path), {
+        ...record,
+        userId,
+        createdAt: serverTimestamp()
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, path);
+    }
+  },
+
+  getSMSHistory: async (): Promise<SMSHistoryRecord[]> => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return [];
+
+    const path = "smsHistory";
+    try {
+      const q = query(
+        collection(db, path),
+        where("userId", "==", userId),
+        orderBy("createdAt", "desc")
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      } as SMSHistoryRecord));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, path);
+      return [];
+    }
+  },
   getLinkedAccounts: async (): Promise<any[]> => {
     const userId = auth.currentUser?.uid;
     if (!userId) return [];

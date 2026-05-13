@@ -94,61 +94,53 @@ export default function Reports() {
   if (isLoading) return <div className="flex h-screen items-center justify-center text-slate-400">Loading Report Data...</div>;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      <header className="mb-10">
-        <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl font-display">Financial Analysis</h1>
-        <p className="text-sm text-slate-400 sm:text-base">Detailed performance report for your income and expenditure nodes.</p>
+    <div className="mx-auto max-w-lg px-4 pb-24 pt-8">
+      <header className="mb-8">
+        <h1 className="text-2xl font-bold tracking-tight text-white font-display">Analysis</h1>
+        <p className="text-xs text-slate-400">Node performance and cashflow flux.</p>
       </header>
 
-      <div className="mb-8 grid gap-6 sm:grid-cols-2 md:grid-cols-4">
-        <div className="glass-card p-6 md:col-span-1">
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</p>
-          <div className="flex items-center gap-2">
-            <div className={`h-2 w-2 rounded-full ${netBalance >= 0 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]'}`}></div>
-            <span className="text-sm font-bold text-white">{netBalance >= 0 ? 'Positive Cashflow' : 'Negative Drift'}</span>
-          </div>
-        </div>
-
-        <div className="glass-card p-6 md:col-span-1">
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">Net Profit/Loss</p>
-          <div className={`text-lg font-bold ${netBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+      <div className="mb-8 grid grid-cols-2 gap-3">
+        <div className="glass-card p-4">
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">Net Flow</p>
+          <div className={`text-sm font-bold ${netBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
             {formatCurrency(netBalance)}
           </div>
         </div>
-
-        <div className="glass-card flex flex-col justify-center p-6 md:col-span-1">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Cycle Income</p>
-          <h2 className="mt-1 text-2xl font-bold text-emerald-400">{formatCurrency(currentMonthIncTotal)}</h2>
+        <div className="glass-card p-4">
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</p>
+          <span className="text-[10px] font-bold text-white uppercase tracking-tighter truncate block">{netBalance >= 0 ? 'Surplus' : 'Deficit'}</span>
         </div>
-
-        <div className="glass-card flex flex-col justify-center p-6 md:col-span-1">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Cycle Expenses</p>
-          <h2 className="mt-1 text-2xl font-bold text-rose-400">{formatCurrency(currentMonthExpTotal)}</h2>
+        <div className="glass-card p-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Inbound</p>
+          <h2 className="text-sm font-bold text-emerald-400">{formatCurrency(currentMonthIncTotal)}</h2>
+        </div>
+        <div className="glass-card p-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Outbound</p>
+          <h2 className="text-sm font-bold text-rose-400">{formatCurrency(currentMonthExpTotal)}</h2>
         </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3 items-stretch">
-        <div className="glass-panel p-6 sm:p-8 lg:col-span-2">
-          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-white">Cashflow Flux</h3>
-              <p className="text-xs text-slate-500">6-Month historical income vs expenses</p>
-            </div>
+      <div className="space-y-6">
+        <div className="glass-panel p-6">
+          <div className="mb-6 flex flex-col gap-2">
+            <h3 className="text-sm font-bold text-white uppercase tracking-widest">Cashflow Flux</h3>
             <div className="flex gap-4">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Income</span>
+              <div className="flex items-center gap-1">
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500"></div>
+                <span className="text-[8px] font-bold text-slate-400 uppercase">In</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-rose-500"></div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Expenses</span>
+              <div className="flex items-center gap-1">
+                <div className="h-1.5 w-1.5 rounded-full bg-rose-500"></div>
+                <span className="text-[8px] font-bold text-slate-400 uppercase">Out</span>
               </div>
             </div>
           </div>
           
-          <div className="h-[300px] w-full">
+          <div className="h-[200px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={monthlyData}>
+                {/* ... existing chart logic ... */}
                 <defs>
                   <linearGradient id="colorInc" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>

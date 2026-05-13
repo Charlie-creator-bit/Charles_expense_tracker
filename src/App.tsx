@@ -5,6 +5,8 @@ import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import Profile from "./pages/Profile";
 import LinkedAccounts from "./pages/LinkedAccounts";
+import SMSHistory from "./pages/SMSHistory";
+import Reminders from "./pages/Reminders";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
 import { AuthProvider } from "./context/AuthContext";
@@ -13,7 +15,7 @@ function Layout({ children }: { children: any }) {
   return (
     <div className="flex min-h-screen bg-[#0f172a]">
       <Navbar />
-      <main className="flex-1 pb-20 md:ml-64 md:pb-0">
+      <main className="flex-1 pb-20">
         <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#0f172a] to-[#1e1b4b]">
           {children}
         </div>
@@ -36,6 +38,8 @@ export default function App() {
             <Route path="/reports" element={<Layout><Reports /></Layout>} />
             <Route path="/profile" element={<Layout><Profile /></Layout>} />
             <Route path="/accounts" element={<Layout><LinkedAccounts /></Layout>} />
+            <Route path="/history" element={<Layout><SMSHistory /></Layout>} />
+            <Route path="/reminders" element={<Layout><Reminders /></Layout>} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

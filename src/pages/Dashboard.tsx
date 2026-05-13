@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { Plus, Wallet, Trash2, TrendingUp, ShoppingCart, Utensils, Car, Home, Zap, MoreHorizontal, RefreshCw } from "lucide-react";
+import { Plus, Wallet, Trash2, TrendingUp, ShoppingCart, Utensils, Car, Home, Zap, MoreHorizontal, RefreshCw, MessageSquare, User, Bell, AlertCircle } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
-import { expenseService, Expense, Income, Budget } from "../services/expenseService";
+import { expenseService, Expense, Income, Budget, Reminder } from "../services/expenseService";
 import { formatCurrency, cn } from "../lib/utils";
+import { isPast, parseISO } from "date-fns";
 import { motion } from "motion/react";
 import { useAuth } from "../context/AuthContext";
+import SMSImporter from "../components/SMSImporter";
 
 const CATEGORIES = [
   { name: "Food", icon: <Utensils className="h-4 w-4" />, color: "#6366f1" },
@@ -21,9 +23,11 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
   const [budget, setBudget] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showIncomeModal, setShowIncomeModal] = useState(false);
+  const [showSMSModal, setShowSMSModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [linkedAccounts, setLinkedAccounts] = useState<any[]>([]);
@@ -52,22 +56,26 @@ export default function Dashboard() {
     if (!user) return;
     try {
       const now = new Date();
-      const [expData, incData, budgetData, accountsData] = await Promise.all([
+      const [expData, incData, budgetData, accountsData, reminderData] = await Promise.all([
         expenseService.getExpenses(),
         expenseService.getIncome(),
         expenseService.getBudget(now.getMonth(), now.getFullYear()),
-        expenseService.getLinkedAccounts()
+        expenseService.getLinkedAccounts(),
+        expenseService.getReminders()
       ]);
       setExpenses(expData);
       setIncomes(incData);
       setBudget(budgetData?.amount || 0);
       setLinkedAccounts(accountsData);
+      setReminders(reminderData);
     } catch (err) {
       console.error(err);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const overdueReminders = reminders.filter(r => !r.isCompleted && isPast(parseISO(r.time)));
 
   const currentMonthExpenses = expenses.filter(e => {
     const date = new Date(e.date);
@@ -168,204 +176,187 @@ export default function Dashboard() {
     ...incomes.map(i => ({ ...i, type: 'income' as const, description: i.source, category: 'Income' }))
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+  const categoryTotals = CATEGORIES.reduce((acc, cat) => {
+    acc[cat.name] = expenses.filter(e => e.category === cat.name).reduce((sum, e) => sum + e.amount, 0);
+    return acc;
+  }, {} as Record<string, number>);
+
+  const transactions = allTransactions.slice(0, 8);
+
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      <header className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Good morning, {userName}</h1>
-          <p className="text-sm text-slate-400 sm:text-base">Here's your financial overview for {format(new Date(), "MMMM yyyy")}.</p>
+    <div className="mx-auto max-w-lg px-4 pb-24 pt-8 h-full min-h-screen">
+      <header className="mb-8 flex flex-col gap-6">
+        {overdueReminders.length > 0 && (
+          <div 
+            onClick={() => navigate("/reminders")}
+            className="mb-2 flex items-center justify-between rounded-3xl bg-rose-500/10 border border-rose-500/20 p-4 text-rose-400 animate-pulse active:scale-95 transition-all cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-500 text-white shadow-lg shadow-rose-500/20">
+                <Bell className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest leading-none">Alert Node Active</p>
+                <p className="mt-1 text-[10px] font-medium opacity-80">{overdueReminders.length} reminder{overdueReminders.length > 1 ? 's' : ''} require attention</p>
+              </div>
+            </div>
+            <AlertCircle className="h-4 w-4" />
+          </div>
+        )}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-white font-display">Hey, {userName}</h1>
+            <p className="text-xs text-slate-400">Total Activity Node</p>
+          </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/20">
+            <User className="h-5 w-5" />
+          </div>
         </div>
-        <div className="flex flex-wrap gap-3">
-          {linkedAccounts.length > 0 && (
-            <button
-              onClick={handleSync}
-              disabled={isSyncing}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 font-semibold text-blue-400 transition-all hover:bg-blue-500/20 active:scale-95 disabled:opacity-50 sm:flex-none"
-            >
-              <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
-              <span className="sm:inline">Sync</span>
-            </button>
-          )}
+        
+        {/* Main Balance Card */}
+        <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-indigo-500 via-emerald-500 to-emerald-600 p-8 shadow-2xl shadow-emerald-500/20">
+          <div className="relative z-10">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-100 opacity-80">Available Liquidity</p>
+            <h2 className="mt-2 text-4xl font-bold text-white tracking-tighter">
+              {formatCurrency(totalIncome - totalSpent)}
+            </h2>
+            <div className="mt-8 flex gap-4">
+              <div className="flex-1 rounded-2xl bg-white/10 p-3 backdrop-blur-md border border-white/10">
+                <p className="text-[10px] font-bold text-emerald-100/60 uppercase">Inflow</p>
+                <p className="text-sm font-bold text-white">{formatCurrency(totalIncome)}</p>
+              </div>
+              <div className="flex-1 rounded-2xl bg-white/10 p-3 backdrop-blur-md border border-white/10">
+                <p className="text-[10px] font-bold text-emerald-100/60 uppercase">Outflow</p>
+                <p className="text-sm font-bold text-white">{formatCurrency(totalSpent)}</p>
+              </div>
+            </div>
+          </div>
+          <div className="absolute -right-4 -top-4 h-32 w-32 rounded-full bg-white/10 blur-2xl"></div>
+          <div className="absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-black/10 blur-3xl"></div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => setShowSMSModal(true)}
+            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-blue-500/10 border border-blue-500/20 p-4 text-blue-400 transition-all active:scale-90"
+          >
+            <MessageSquare className="h-6 w-6" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">SMS Sync</span>
+          </button>
+          <button
+            onClick={() => navigate("/reports")}
+            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-slate-800/50 border border-slate-700/50 p-4 text-slate-300 transition-all active:scale-90"
+          >
+            <TrendingUp className="h-6 w-6" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Reports</span>
+          </button>
           <button
             onClick={() => setShowIncomeModal(true)}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 font-semibold text-emerald-400 transition-all hover:bg-emerald-500/20 active:scale-95 sm:flex-none sm:px-6"
+            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-emerald-500 p-4 text-white shadow-lg shadow-emerald-500/20 transition-all active:scale-90"
           >
-            <TrendingUp className="h-5 w-5" />
-            <span className="whitespace-nowrap">Add Income</span>
+            <Plus className="h-6 w-6" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Add Income</span>
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-500 px-4 py-3 font-semibold text-white shadow-lg shadow-rose-500/20 transition-all hover:bg-rose-400 active:scale-95 sm:flex-none sm:px-6"
+            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-rose-500 p-4 text-white shadow-lg shadow-rose-500/20 transition-all active:scale-90"
           >
-            <Plus className="h-5 w-5" />
-            <span className="whitespace-nowrap">New Expense</span>
+            <Plus className="h-6 w-6" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Add Expense</span>
           </button>
         </div>
       </header>
 
-      {/* Stats Cards Row */}
-      <div className="mb-8 grid gap-6 md:grid-cols-3">
-        <div className="glass-card relative overflow-hidden p-6">
-          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-emerald-500/10 blur-3xl"></div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Monthly Income</p>
-          <h2 className="text-4xl font-bold text-white">{formatCurrency(totalIncome)}</h2>
-          <p className="mt-3 flex items-center gap-1 text-xs font-bold text-emerald-400">
-            <TrendingUp className="h-3 w-3" />
-            Active month
-          </p>
+      {/* Categories Grid (Mobile UI) */}
+      <section className="mb-10 overflow-hidden">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-white uppercase tracking-widest">Categories</h3>
+          <span className="text-[10px] text-slate-500 uppercase font-bold">Scroll</span>
         </div>
-
-        <div className="glass-card p-6">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Net Balance</p>
-          <h2 className={cn("text-4xl font-bold transition-colors", netBalance >= 0 ? "text-emerald-400" : "text-rose-400")}>
-            {formatCurrency(netBalance)}
-          </h2>
-          <div className="mt-5 flex items-center gap-4">
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-700">
-              <div 
-                className={cn("h-full transition-all duration-1000", totalSpent > totalIncome ? "bg-rose-500" : "bg-emerald-500")}
-                style={{ width: `${totalIncome > 0 ? Math.min(100, (totalSpent / totalIncome) * 100) : (totalSpent > 0 ? 100 : 0)}%` }}
-              ></div>
-            </div>
-            <span className="text-[10px] font-bold text-slate-500 uppercase">
-              Burn Rate
-            </span>
-          </div>
-        </div>
-
-        <div className="glass-card relative overflow-hidden p-6">
-          <div className="absolute -right-4 -bottom-4 h-24 w-24 rounded-full bg-rose-500/10 blur-3xl"></div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Monthly Spending</p>
-          <h2 className="text-4xl font-bold text-white">{formatCurrency(totalSpent)}</h2>
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-xs text-slate-500">Budget: {formatCurrency(budget)}</span>
-            <button 
-              onClick={() => navigate("/profile")}
-              className="text-xs font-bold text-slate-400 hover:text-white hover:underline"
-            >
-              Adjust
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-8 lg:grid-cols-5">
-        {/* Recent Transactions */}
-        <section className="lg:col-span-3">
-          <h3 className="mb-4 px-2 text-lg font-bold text-white">Recent Activity</h3>
-          <div className="glass-panel min-h-[400px] overflow-x-auto">
-            <table className="w-full min-w-[600px] text-left">
-              <thead>
-                <tr className="border-b border-slate-700/30 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                  <th className="px-6 py-4">Transaction</th>
-                  <th className="px-6 py-4">Source/Category</th>
-                  <th className="px-6 py-4 text-right">Amount</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                {allTransactions.slice(0, 10).map((tx: any) => (
-                  <tr key={tx.id} className="border-b border-slate-700/10 transition-colors hover:bg-slate-700/20 group">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "flex h-8 w-8 items-center justify-center rounded-full border border-slate-700/50 bg-slate-800",
-                          tx.type === 'income' ? "text-emerald-400 border-emerald-500/20" : "text-slate-300"
-                        )}>
-                          {tx.type === 'income' ? (
-                            <Wallet className="h-4 w-4" />
-                          ) : (
-                            CATEGORIES.find(c => c.name === tx.category)?.icon || <MoreHorizontal className="h-4 w-4" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-medium text-white">{tx.description}</p>
-                          <p className="text-[10px] text-slate-500">{format(new Date(tx.date), "MMM d, yyyy")}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={cn(
-                        "rounded px-2 py-1 text-[10px] font-bold uppercase border border-slate-600/30",
-                        tx.type === 'income' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-slate-700/50 text-slate-400"
-                      )}>
-                        {tx.category}
-                      </span>
-                    </td>
-                    <td className={cn(
-                      "px-6 py-4 text-right font-mono",
-                      tx.type === 'income' ? "text-emerald-400" : "text-rose-400"
-                    )}>
-                      {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button 
-                        onClick={() => handleDeleteTransaction(tx.id, tx.type)}
-                        className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 hover:border-rose-500/20 hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 active:scale-90 transition-all"
-                        title="Delete transaction"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {allTransactions.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="py-20 text-center text-slate-500">No transactions recorded yet</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* Spending Breakdown */}
-        <section className="lg:col-span-2">
-          <h3 className="mb-4 px-2 text-lg font-bold text-white">Expense Distribution</h3>
-          <div className="glass-panel flex h-full flex-col p-6">
-            <div className="mb-6 flex aspect-square w-full items-center justify-center py-4">
-              {chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <RechartsTooltip 
-                      contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
-                      itemStyle={{ color: '#f1f5f9' }}
-                    />
-                    <Pie
-                      data={chartData}
-                      innerRadius="65%"
-                      outerRadius="85%"
-                      paddingAngle={4}
-                      dataKey="value"
-                    >
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex flex-col items-center gap-2 text-slate-500">
-                  <div className="h-32 w-32 rounded-full border-[12px] border-slate-700/50"></div>
-                  <span className="text-xs font-bold uppercase tracking-widest">No Mix Data</span>
+        <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar scroll-smooth">
+          {CATEGORIES.map((cat) => {
+            const amount = categoryTotals[cat.name] || 0;
+            const percentage = totalSpent > 0 ? (amount / totalSpent) * 100 : 0;
+            return (
+              <div key={cat.name} className="flex-shrink-0 w-32 glass-panel p-4 rounded-3xl border border-slate-700/30">
+                <div 
+                  className="mb-3 flex h-8 w-8 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: `${cat.color}33`, color: cat.color }}
+                >
+                  {cat.icon}
                 </div>
-              )}
-            </div>
-            
-            <div className="mt-auto space-y-4">
-              {chartData.map(item => (
-                <div key={item.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                    <span className="text-sm text-slate-300">{item.name}</span>
-                  </div>
-                  <span className="font-mono text-sm text-white">{formatCurrency(item.value)}</span>
+                <p className="text-[10px] font-bold text-slate-400 uppercase leading-none">{cat.name}</p>
+                <p className="mt-1 text-sm font-bold text-white">{formatCurrency(amount)}</p>
+                <div className="mt-3 h-1 w-full rounded-full bg-slate-800">
+                  <div 
+                    className="h-full rounded-full transition-all duration-1000"
+                    style={{ backgroundColor: cat.color, width: `${percentage}%` }}
+                  ></div>
                 </div>
-              ))}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <section>
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-white uppercase tracking-widest">Recent Activity</h3>
+          <button onClick={fetchData} className="text-slate-500 hover:text-white transition-colors">
+            <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
+          </button>
+        </div>
+        <div className="space-y-3">
+          {transactions.map((tx) => (
+            <div key={tx.id} className="group flex items-center gap-4 rounded-3xl bg-slate-800/30 border border-slate-700/30 p-4 transition-all active:bg-slate-800/50">
+              <div className={cn(
+                "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
+                tx.type === "income" ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+              )}>
+                {tx.type === "income" ? <TrendingUp className="h-6 w-6" /> : <ShoppingCart className="h-6 w-6" />}
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <p className="truncate text-sm font-bold text-white">{tx.description}</p>
+                <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">{tx.type === 'expense' ? tx.category : tx.source}</p>
+              </div>
+              <div className="text-right">
+                <p className={cn(
+                  "text-sm font-bold font-mono",
+                  tx.type === "income" ? "text-emerald-400" : "text-white"
+                )}>
+                  {tx.type === "income" ? "+" : "-"}{formatCurrency(tx.amount)}
+                </p>
+                <p className="text-[10px] text-slate-500">{format(new Date(tx.date), "MMM d")}</p>
+              </div>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteTransaction(tx.id, tx.type);
+                }}
+                className="ml-2 h-8 w-8 flex items-center justify-center rounded-xl bg-rose-500/10 text-rose-500 opacity-0 group-hover:opacity-100 transition-all active:scale-90"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
             </div>
-          </div>
-        </section>
-      </div>
+          ))}
+          {transactions.length === 0 && (
+            <div className="py-12 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-800/50 text-slate-600">
+                <RefreshCw className="h-8 w-8" />
+              </div>
+              <p className="text-sm font-medium text-slate-500">No transactions recorded yet</p>
+              <p className="text-xs text-slate-600 mt-1">Try the SMS Sync feature</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {showSMSModal && (
+        <SMSImporter 
+          onSuccess={fetchData} 
+          onClose={() => setShowSMSModal(false)} 
+        />
+      )}
 
       {/* Add Income Modal */}
       {showIncomeModal && (
@@ -405,6 +396,16 @@ export default function Dashboard() {
                   onChange={e => setNewIncome({ ...newIncome, source: e.target.value })}
                   className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3.5 text-white placeholder-slate-600 focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
                   placeholder="e.g. Salary, Dividend, Gift"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">Date</label>
+                <input
+                  type="date"
+                  required
+                  value={newIncome.date}
+                  onChange={e => setNewIncome({ ...newIncome, date: e.target.value })}
+                  className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3.5 text-white focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 [scheme:dark]"
                 />
               </div>
               <div className="flex gap-4 pt-4">
@@ -477,6 +478,16 @@ export default function Dashboard() {
                   onChange={e => setNewExpense({ ...newExpense, description: e.target.value })}
                   className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3.5 text-white placeholder-slate-600 focus:border-rose-500/50 focus:outline-none focus:ring-1 focus:ring-rose-500/50"
                   placeholder="What was it for?"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">Date</label>
+                <input
+                  type="date"
+                  required
+                  value={newExpense.date}
+                  onChange={e => setNewExpense({ ...newExpense, date: e.target.value })}
+                  className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3.5 text-white focus:border-rose-500/50 focus:outline-none focus:ring-1 focus:ring-rose-500/50 [scheme:dark]"
                 />
               </div>
               <div className="flex gap-4 pt-4">

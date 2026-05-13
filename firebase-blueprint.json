@@ -65,6 +65,33 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "type", "userId", "createdAt"]
+    },
+    "SMSHistory": {
+      "title": "SMS Parse History",
+      "description": "Record of SMS messages parsed by AI",
+      "type": "object",
+      "properties": {
+        "originalText": { "type": "string" },
+        "parsedData": { "type": "object" },
+        "status": { "type": "string", "enum": ["success", "failed"] },
+        "transactionId": { "type": "string" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["originalText", "userId", "createdAt"]
+    },
+    "Reminder": {
+      "title": "Financial Reminder",
+      "description": "Scheduled alert for financial tasks",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "time": { "type": "string", "format": "date-time" },
+        "isCompleted": { "type": "boolean" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "time", "userId", "createdAt"]
     }
   },
   "firestore": {
@@ -87,6 +114,14 @@
     "accounts": {
       "schema": "Account",
       "description": "Collection of linked banking and MoMo accounts"
+    },
+    "smsHistory": {
+      "schema": "SMSHistory",
+      "description": "History of parsed SMS messages"
+    },
+    "reminders": {
+      "schema": "Reminder",
+      "description": "User defined reminders and alerts"
     }
   }
 }
