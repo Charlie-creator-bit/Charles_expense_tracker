@@ -11,6 +11,16 @@ export default function Reminders() {
   const [newTitle, setNewTitle] = useState("");
   const [newTime, setNewTime] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
+    typeof Notification !== "undefined" ? Notification.permission : "default"
+  );
+
+  const requestPermission = async () => {
+    if (typeof Notification !== "undefined") {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+    }
+  };
 
   useEffect(() => {
     fetchReminders();
@@ -85,6 +95,38 @@ export default function Reminders() {
           <Plus className="h-6 w-6" />
         </button>
       </header>
+
+      {notificationPermission === "default" && (
+        <div className="mb-6 flex items-center justify-between rounded-3xl bg-blue-500/10 border border-blue-500/20 p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500 text-white">
+              <Bell className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest leading-none text-blue-400">Push Notifications</p>
+              <p className="mt-1 text-[10px] font-medium text-slate-400">Enable alerts for your financial nodes.</p>
+            </div>
+          </div>
+          <button 
+            onClick={requestPermission}
+            className="rounded-xl bg-blue-500 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-blue-400 active:scale-95"
+          >
+            Enable
+          </button>
+        </div>
+      )}
+
+      {notificationPermission === "denied" && (
+        <div className="mb-6 flex items-center gap-3 rounded-3xl bg-rose-500/10 border border-rose-500/20 p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-500/20 text-rose-500">
+            <AlertCircle className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest leading-none text-rose-400">Notifications Blocked</p>
+            <p className="mt-1 text-[10px] font-medium text-slate-500">Please enable notifications in your browser settings to receive financial alerts.</p>
+          </div>
+        </div>
+      )}
 
       {isAdding && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">

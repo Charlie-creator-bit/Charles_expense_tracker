@@ -7,9 +7,12 @@ import Profile from "./pages/Profile";
 import LinkedAccounts from "./pages/LinkedAccounts";
 import SMSHistory from "./pages/SMSHistory";
 import Reminders from "./pages/Reminders";
+import IncomeTransactions from "./pages/IncomeTransactions";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
+import NotificationManager from "./components/NotificationManager";
 import { AuthProvider } from "./context/AuthContext";
+import { UndoProvider } from "./context/UndoContext";
 
 function Layout({ children }: { children: any }) {
   return (
@@ -28,22 +31,26 @@ export default function App() {
   return (
     <Router>
       <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          
-          {/* Protected Routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/" element={<Layout><Dashboard /></Layout>} />
-            <Route path="/reports" element={<Layout><Reports /></Layout>} />
-            <Route path="/profile" element={<Layout><Profile /></Layout>} />
-            <Route path="/accounts" element={<Layout><LinkedAccounts /></Layout>} />
-            <Route path="/history" element={<Layout><SMSHistory /></Layout>} />
-            <Route path="/reminders" element={<Layout><Reminders /></Layout>} />
-          </Route>
+        <UndoProvider>
+          <NotificationManager />
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            
+            {/* Protected Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<Layout><Dashboard /></Layout>} />
+              <Route path="/reports" element={<Layout><Reports /></Layout>} />
+              <Route path="/profile" element={<Layout><Profile /></Layout>} />
+              <Route path="/accounts" element={<Layout><LinkedAccounts /></Layout>} />
+              <Route path="/history" element={<Layout><SMSHistory /></Layout>} />
+              <Route path="/reminders" element={<Layout><Reminders /></Layout>} />
+              <Route path="/income" element={<Layout><IncomeTransactions /></Layout>} />
+            </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </UndoProvider>
       </AuthProvider>
     </Router>
   );

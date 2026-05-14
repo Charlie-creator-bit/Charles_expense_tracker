@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { Plus, Wallet, Trash2, TrendingUp, ShoppingCart, Utensils, Car, Home, Zap, MoreHorizontal, RefreshCw, MessageSquare, User, Bell, AlertCircle } from "lucide-react";
+import { Plus, Wallet, Trash2, TrendingUp, ShoppingCart, Utensils, Car, Home, Zap, MoreHorizontal, RefreshCw, MessageSquare, User, Bell, AlertCircle, Radio, ShieldCheck } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { expenseService, Expense, Income, Budget, Reminder } from "../services/expenseService";
 import { formatCurrency, cn } from "../lib/utils";
 import { isPast, parseISO } from "date-fns";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "../context/AuthContext";
+import { useUndo } from "../context/UndoContext";
 import SMSImporter from "../components/SMSImporter";
 
 const CATEGORIES = [
@@ -30,8 +31,10 @@ export default function Dashboard() {
   const [showSMSModal, setShowSMSModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isLiveEnabled, setIsLiveEnabled] = useState(true);
   const [linkedAccounts, setLinkedAccounts] = useState<any[]>([]);
   const { user } = useAuth();
+  const { recordDeletion } = useUndo();
 
   // New Expense form state
   const [newExpense, setNewExpense] = useState({
@@ -145,22 +148,40 @@ export default function Dashboard() {
     setIsSyncing(false);
   };
 
-  const handleDeleteTransaction = async (id: string, type: 'expense' | 'income') => {
-    if (window.confirm("Verify: Permanently purge this transaction record?")) {
+  const handleDeleteTransaction = async (tx: any) => {
+    const typeLabel = tx.type === 'income' ? 'Revenue' : 'Expense';
+    const amountLabel = tx.type === 'income' ? '+' : '-';
+    
+    // Formatting the system timestamp if available
+    let systemTime = "";
+    if (tx.createdAt) {
+      const date = tx.createdAt.toDate ? tx.createdAt.toDate() : new Date(tx.createdAt);
+      systemTime = `\nRecorded: ${format(date, "MMM d, yyyy HH:mm:ss")}`;
+    }
+
+    const details = `[${typeLabel}] ${tx.description}\nAmount: ${amountLabel}${formatCurrency(tx.amount)}\nDate: ${format(new Date(tx.date), "MMM d, yyyy")}${systemTime}`;
+
+    if (window.confirm(`Verify: Permanently purge this transaction record?\n\n${details}`)) {
+      const originalData = { ...tx };
+      
       // Optimistic Update: Remove from UI immediately for better responsiveness
-      if (type === 'expense') {
-        setExpenses(prev => prev.filter(e => e.id !== id));
+      if (tx.type === 'expense') {
+        setExpenses(prev => prev.filter(e => e.id !== tx.id));
       } else {
-        setIncomes(prev => prev.filter(i => i.id !== id));
+        setIncomes(prev => prev.filter(i => i.id !== tx.id));
       }
 
       try {
-        if (type === 'expense') {
-          await expenseService.deleteExpense(id);
+        if (tx.type === 'expense') {
+          await expenseService.deleteExpense(tx.id);
         } else {
-          await expenseService.deleteIncome(id);
+          await expenseService.deleteIncome(tx.id);
         }
-        // No need to fetchData() here because we already updated the state optimistically
+        
+        recordDeletion(
+          { id: tx.id, type: tx.type as any, data: originalData },
+          () => fetchData() // Callback to refresh data on undo
+        );
       } catch (err) {
         console.error("Deletion failed:", err);
         // Revert state if the server operation fails
@@ -169,7 +190,11 @@ export default function Dashboard() {
     }
   };
 
-  const userName = user?.displayName || user?.email?.split('@')[0] || "Operator";
+  const rawName = user?.displayName?.split(' ')[0] || user?.email?.split('@')[0] || "Operator";
+  const userName = rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase();
+
+  const greetings = ["Hey", "Yo", "Sup", "Hi", "Hello"];
+  const greeting = greetings[new Date().getMinutes() % greetings.length];
 
   const allTransactions = [
     ...expenses.map(e => ({ ...e, type: 'expense' as const })),
@@ -186,6 +211,61 @@ export default function Dashboard() {
   return (
     <div className="mx-auto max-w-lg px-4 pb-24 pt-8 h-full min-h-screen">
       <header className="mb-8 flex flex-col gap-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-white font-display">{greeting}, {userName}</h1>
+            <p className="text-xs text-slate-400">Ledger Intelligence Node</p>
+          </div>
+          <div className="flex items-center gap-3">
+             <button 
+              onClick={() => setIsLiveEnabled(!isLiveEnabled)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold uppercase transition-all ring-1",
+                isLiveEnabled ? "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20" : "bg-slate-800 text-slate-500 ring-slate-700 hover:text-slate-300"
+              )}
+            >
+              <Radio className={cn("h-3 w-3", isLiveEnabled && "animate-pulse")} />
+              {isLiveEnabled ? "Live" : "Offline"}
+            </button>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-500 ring-1 ring-indigo-500/20">
+              <User className="h-5 w-5" />
+            </div>
+          </div>
+        </div>
+
+        {isLiveEnabled && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-[2.5rem] bg-indigo-500/10 border border-indigo-500/20 p-6 relative overflow-hidden"
+          >
+            <div className="flex items-start gap-4 relative z-10">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-500 text-white shadow-lg shadow-indigo-500/20">
+                <ShieldCheck className="h-6 w-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xs font-bold text-white uppercase tracking-widest">Autonomous Detection Active</h3>
+                <p className="mt-1 text-[10px] leading-relaxed text-slate-400">
+                  Your device's SMS notification bridge is linked. Transactions will be logged as they arrive.
+                </p>
+                <div className="mt-4 flex gap-2">
+                  <button 
+                    onClick={() => setShowSMSModal(true)}
+                    className="rounded-xl bg-indigo-500 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-indigo-400 active:scale-95 transition-all"
+                  >
+                    Bridge Hardware
+                  </button>
+                  <div className="flex items-center gap-1.5 rounded-xl border border-indigo-500/30 px-3 py-2 text-[10px] font-bold text-indigo-400 uppercase">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Ready
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="absolute right-0 top-0 h-full w-32 bg-gradient-to-l from-indigo-500/10 to-transparent"></div>
+          </motion.div>
+        )}
+        
         {overdueReminders.length > 0 && (
           <div 
             onClick={() => navigate("/reminders")}
@@ -203,66 +283,62 @@ export default function Dashboard() {
             <AlertCircle className="h-4 w-4" />
           </div>
         )}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white font-display">Hey, {userName}</h1>
-            <p className="text-xs text-slate-400">Total Activity Node</p>
-          </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 ring-1 ring-emerald-500/20">
-            <User className="h-5 w-5" />
-          </div>
-        </div>
         
         {/* Main Balance Card */}
-        <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-indigo-500 via-emerald-500 to-emerald-600 p-8 shadow-2xl shadow-emerald-500/20">
-          <div className="relative z-10">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-100 opacity-80">Available Liquidity</p>
-            <h2 className="mt-2 text-4xl font-bold text-white tracking-tighter">
+        <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-slate-800 via-slate-900 to-[#0f172a] p-8 shadow-2xl border border-slate-700/50">
+          <div className="relative z-10 text-center">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Net Liquidity</p>
+            <h2 className="mt-3 text-5xl font-bold text-white tracking-tighter">
               {formatCurrency(totalIncome - totalSpent)}
             </h2>
-            <div className="mt-8 flex gap-4">
-              <div className="flex-1 rounded-2xl bg-white/10 p-3 backdrop-blur-md border border-white/10">
-                <p className="text-[10px] font-bold text-emerald-100/60 uppercase">Inflow</p>
-                <p className="text-sm font-bold text-white">{formatCurrency(totalIncome)}</p>
+            <div className="mt-10 grid grid-cols-2 gap-4">
+              <div 
+                onClick={() => navigate("/income")}
+                className="rounded-3xl bg-slate-800/80 p-5 border border-slate-700/50 cursor-pointer active:scale-95 transition-all group"
+              >
+                <p className="text-[10px] font-bold text-slate-500/80 uppercase mb-1">Inflow</p>
+                <p className="text-lg font-bold text-emerald-400 group-hover:scale-105 transition-transform">{formatCurrency(totalIncome)}</p>
               </div>
-              <div className="flex-1 rounded-2xl bg-white/10 p-3 backdrop-blur-md border border-white/10">
-                <p className="text-[10px] font-bold text-emerald-100/60 uppercase">Outflow</p>
-                <p className="text-sm font-bold text-white">{formatCurrency(totalSpent)}</p>
+              <div className="rounded-3xl bg-slate-800/80 p-5 border border-slate-700/50 group">
+                <p className="text-[10px] font-bold text-slate-500/80 uppercase mb-1">Outflow</p>
+                <p className="text-lg font-bold text-rose-400 group-hover:scale-105 transition-transform">{formatCurrency(totalSpent)}</p>
               </div>
             </div>
           </div>
-          <div className="absolute -right-4 -top-4 h-32 w-32 rounded-full bg-white/10 blur-2xl"></div>
-          <div className="absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-black/10 blur-3xl"></div>
+          <div className="absolute -right-4 -top-4 h-32 w-32 rounded-full bg-indigo-500/5 blur-2xl"></div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => setShowSMSModal(true)}
-            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-blue-500/10 border border-blue-500/20 p-4 text-blue-400 transition-all active:scale-90"
-          >
-            <MessageSquare className="h-6 w-6" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">SMS Sync</span>
-          </button>
-          <button
-            onClick={() => navigate("/reports")}
-            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-slate-800/50 border border-slate-700/50 p-4 text-slate-300 transition-all active:scale-90"
-          >
-            <TrendingUp className="h-6 w-6" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Reports</span>
-          </button>
+          <div className="col-span-2 mb-2">
+            <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Manual Overrides</h4>
+          </div>
           <button
             onClick={() => setShowIncomeModal(true)}
-            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-emerald-500 p-4 text-white shadow-lg shadow-emerald-500/20 transition-all active:scale-90"
+            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 p-5 text-emerald-400 transition-all active:scale-90"
           >
             <Plus className="h-6 w-6" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Add Income</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider">Record Inflow</span>
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-rose-500 p-4 text-white shadow-lg shadow-rose-500/20 transition-all active:scale-90"
+            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-rose-500/10 border border-rose-500/20 p-5 text-rose-400 transition-all active:scale-90"
           >
             <Plus className="h-6 w-6" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Add Expense</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider">Record Outflow</span>
+          </button>
+          <button
+            onClick={() => navigate("/reports")}
+            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-slate-800/50 border border-slate-700/50 p-5 text-slate-300 transition-all active:scale-90"
+          >
+            <TrendingUp className="h-6 w-6" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">Historical Data</span>
+          </button>
+          <button
+            onClick={() => setShowSMSModal(true)}
+            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-slate-800/50 border border-slate-700/50 p-5 text-slate-300 transition-all active:scale-90"
+          >
+            <MessageSquare className="h-6 w-6" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">SMS Archive</span>
           </button>
         </div>
       </header>
@@ -307,38 +383,48 @@ export default function Dashboard() {
           </button>
         </div>
         <div className="space-y-3">
-          {transactions.map((tx) => (
-            <div key={tx.id} className="group flex items-center gap-4 rounded-3xl bg-slate-800/30 border border-slate-700/30 p-4 transition-all active:bg-slate-800/50">
-              <div className={cn(
-                "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
-                tx.type === "income" ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
-              )}>
-                {tx.type === "income" ? <TrendingUp className="h-6 w-6" /> : <ShoppingCart className="h-6 w-6" />}
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <p className="truncate text-sm font-bold text-white">{tx.description}</p>
-                <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">{tx.type === 'expense' ? tx.category : tx.source}</p>
-              </div>
-              <div className="text-right">
-                <p className={cn(
-                  "text-sm font-bold font-mono",
-                  tx.type === "income" ? "text-emerald-400" : "text-white"
-                )}>
-                  {tx.type === "income" ? "+" : "-"}{formatCurrency(tx.amount)}
-                </p>
-                <p className="text-[10px] text-slate-500">{format(new Date(tx.date), "MMM d")}</p>
-              </div>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteTransaction(tx.id, tx.type);
-                }}
-                className="ml-2 h-8 w-8 flex items-center justify-center rounded-xl bg-rose-500/10 text-rose-500 opacity-0 group-hover:opacity-100 transition-all active:scale-90"
+          <AnimatePresence initial={false}>
+            {transactions.map((tx) => (
+              <motion.div 
+                key={tx.id} 
+                layout
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="group flex items-center gap-4 rounded-3xl bg-slate-800/20 border border-slate-700/30 p-4 transition-all active:bg-slate-800/50"
               >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
+                <div className={cn(
+                  "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
+                  tx.type === "income" ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+                )}>
+                  {tx.type === "income" ? <TrendingUp className="h-6 w-6" /> : <ShoppingCart className="h-6 w-6" />}
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <p className="truncate text-sm font-bold text-white">{tx.description}</p>
+                  <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">{tx.type === 'expense' ? tx.category : tx.source}</p>
+                </div>
+                <div className="text-right">
+                  <p className={cn(
+                    "text-sm font-bold font-mono",
+                    tx.type === "income" ? "text-emerald-400" : "text-white"
+                  )}>
+                    {tx.type === "income" ? "+" : "-"}{formatCurrency(tx.amount)}
+                  </p>
+                  <p className="text-[10px] text-slate-500">{format(new Date(tx.date), "MMM d")}</p>
+                </div>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteTransaction(tx);
+                  }}
+                  className="ml-2 h-10 w-10 flex shrink-0 items-center justify-center rounded-2xl bg-slate-800/50 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 border border-slate-700/50 transition-all active:scale-90"
+                  title="Delete transaction"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </motion.div>
+            ))}
+          </AnimatePresence>
           {transactions.length === 0 && (
             <div className="py-12 text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-800/50 text-slate-600">
@@ -355,6 +441,7 @@ export default function Dashboard() {
         <SMSImporter 
           onSuccess={fetchData} 
           onClose={() => setShowSMSModal(false)} 
+          initialListening={isLiveEnabled}
         />
       )}
 

@@ -1,16 +1,20 @@
 import { useState, useEffect } from "react";
 import { format, subMonths } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart } from "recharts";
 import { TrendingUp, TrendingDown, PieChart as PieChartIcon, BarChart as BarChartIcon, AlertCircle, Trash2 } from "lucide-react";
 import { expenseService, Income } from "../services/expenseService";
 import { formatCurrency } from "../lib/utils";
 import { useAuth } from "../context/AuthContext";
+import { useUndo } from "../context/UndoContext";
 
 export default function Reports() {
+  const navigate = useNavigate();
   const [expenses, setExpenses] = useState<any[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  const { recordDeletion } = useUndo();
 
   useEffect(() => {
     fetchData();
@@ -32,12 +36,51 @@ export default function Reports() {
     }
   };
 
-  const handleDeleteIncome = async (id: string) => {
-    if (window.confirm("Permanently delete this income record?")) {
+  const handleDeleteIncome = async (income: Income) => {
+    let systemTime = "";
+    if ((income as any).createdAt) {
+      const date = (income as any).createdAt.toDate ? (income as any).createdAt.toDate() : new Date((income as any).createdAt);
+      systemTime = `\nRecorded: ${format(date, "MMM d, yyyy HH:mm:ss")}`;
+    }
+
+    const details = `${income.source}\nAmount: +${formatCurrency(income.amount)}\nDate: ${format(new Date(income.date), "MMM d, yyyy")}${systemTime}`;
+    
+    if (window.confirm(`Verify: Permanently purge this revenue record?\n\n${details}`)) {
+      const originalData = { ...income };
       // Optimistic update
-      setIncomes(prev => prev.filter(inc => inc.id !== id));
+      setIncomes(prev => prev.filter(inc => inc.id !== income.id));
       try {
-        await expenseService.deleteIncome(id);
+        await expenseService.deleteIncome(income.id);
+        recordDeletion(
+          { id: income.id, type: "income", data: originalData },
+          () => fetchData()
+        );
+      } catch (err) {
+        console.error("Deletion failed:", err);
+        fetchData();
+      }
+    }
+  };
+
+  const handleDeleteExpense = async (expense: any) => {
+    let systemTime = "";
+    if (expense.createdAt) {
+      const date = expense.createdAt.toDate ? expense.createdAt.toDate() : new Date(expense.createdAt);
+      systemTime = `\nRecorded: ${format(date, "MMM d, yyyy HH:mm:ss")}`;
+    }
+
+    const details = `${expense.description}\nAmount: -${formatCurrency(expense.amount)}\nCategory: ${expense.category}\nDate: ${format(new Date(expense.date), "MMM d, yyyy")}${systemTime}`;
+    
+    if (window.confirm(`Verify: Permanently purge this expense record?\n\n${details}`)) {
+      const originalData = { ...expense };
+      // Optimistic update
+      setExpenses(prev => prev.filter(e => e.id !== expense.id));
+      try {
+        await expenseService.deleteExpense(expense.id);
+        recordDeletion(
+          { id: expense.id, type: "expense", data: originalData },
+          () => fetchData()
+        );
       } catch (err) {
         console.error("Deletion failed:", err);
         fetchData();
@@ -192,17 +235,29 @@ export default function Reports() {
         <div className="glass-panel p-8">
           <h3 className="mb-6 text-lg font-bold text-white font-display">Major Expenses</h3>
           <div className="space-y-6">
-            {expenses
+            {[...expenses]
               .sort((a, b) => b.amount - a.amount)
               .slice(0, 5)
               .map((expense) => (
                 <div key={expense.id} className="group relative">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-sm font-bold text-white transition-colors group-hover:text-emerald-400">{expense.description}</p>
                       <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{expense.category}</p>
                     </div>
-                    <span className="font-mono text-sm font-bold text-rose-400">-{formatCurrency(expense.amount)}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-sm font-bold text-rose-400">-{formatCurrency(expense.amount)}</span>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteExpense(expense);
+                        }}
+                        className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-rose-400 transition-all active:scale-90"
+                        title="Delete expense record"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                   <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-800">
                     <div 
@@ -226,10 +281,18 @@ export default function Reports() {
         </div>
       </div>
       <div className="mt-8 grid gap-8 lg:grid-cols-1">
-        <div className="glass-panel p-8">
-          <div className="mb-8">
-            <h3 className="text-xl font-bold text-white font-display uppercase tracking-tight">Income Transactions</h3>
-            <p className="text-xs text-slate-500">Chronological record of all revenue inflows.</p>
+        <div className="glass-panel p-8 border border-slate-700/30 hover:border-emerald-500/20 transition-all duration-500">
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-white font-display uppercase tracking-tight">Income Transactions</h3>
+              <p className="text-xs text-slate-500">Chronological record of all revenue inflows.</p>
+            </div>
+            <button 
+              onClick={() => navigate("/income")}
+              className="rounded-xl bg-emerald-500/10 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-emerald-400 hover:bg-emerald-500/20 active:scale-95 transition-all"
+            >
+              Manage All
+            </button>
           </div>
           
           <div className="overflow-x-auto -mx-4 sm:mx-0">
@@ -243,7 +306,7 @@ export default function Reports() {
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {incomes
+                {[...incomes]
                   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                   .map((income) => (
                     <tr key={income.id} className="border-b border-slate-700/10 transition-colors hover:bg-slate-700/20 group">
@@ -258,8 +321,11 @@ export default function Reports() {
                       </td>
                       <td className="py-4 px-4 text-right">
                         <button 
-                          onClick={() => handleDeleteIncome(income.id!)}
-                          className="p-1.5 rounded-lg border border-transparent hover:border-rose-500/20 hover:bg-rose-500/10 text-slate-500 hover:text-rose-400 active:scale-90 transition-all"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteIncome(income);
+                          }}
+                          className="p-1.5 rounded-lg border border-slate-700/50 bg-slate-800/50 text-slate-400 hover:text-rose-400 transition-all active:scale-90"
                           title="Delete income record"
                         >
                           <Trash2 className="h-4 w-4" />
