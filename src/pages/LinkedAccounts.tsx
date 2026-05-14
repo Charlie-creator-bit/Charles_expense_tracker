@@ -90,7 +90,7 @@ export default function LinkedAccounts() {
   };
 
   return (
-    <div className="mx-auto max-w-lg px-4 pb-24 pt-8">
+    <div className="mx-auto max-w-md px-4 pb-24 pt-8">
       <header className="mb-8 flex flex-col gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white font-display">Linked Accounts</h1>

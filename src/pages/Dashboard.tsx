@@ -209,7 +209,7 @@ export default function Dashboard() {
   const transactions = allTransactions.slice(0, 8);
 
   return (
-    <div className="mx-auto max-w-lg px-4 pb-24 pt-8 h-full min-h-screen">
+    <div className="mx-auto max-w-md px-4 pb-24 pt-8 h-full min-h-screen">
       <header className="mb-8 flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <div>
@@ -237,11 +237,11 @@ export default function Dashboard() {
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-[2.5rem] bg-indigo-500/10 border border-indigo-500/20 p-6 relative overflow-hidden"
+            className="rounded-[2.5rem] bg-indigo-500/10 border border-indigo-500/20 p-4 relative overflow-hidden"
           >
-            <div className="flex items-start gap-4 relative z-10">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-500 text-white shadow-lg shadow-indigo-500/20">
-                <ShieldCheck className="h-6 w-6" />
+            <div className="flex items-start gap-3 relative z-10">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-500 text-white shadow-lg shadow-indigo-500/20">
+                <ShieldCheck className="h-5 w-5" />
               </div>
               <div className="flex-1">
                 <h3 className="text-xs font-bold text-white uppercase tracking-widest">Autonomous Detection Active</h3>
@@ -285,23 +285,23 @@ export default function Dashboard() {
         )}
         
         {/* Main Balance Card */}
-        <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-slate-800 via-slate-900 to-[#0f172a] p-8 shadow-2xl border border-slate-700/50">
+        <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-slate-800 via-slate-900 to-[#0f172a] p-6 shadow-2xl border border-slate-700/50">
           <div className="relative z-10 text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Net Liquidity</p>
-            <h2 className="mt-3 text-5xl font-bold text-white tracking-tighter">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Net Liquidity</p>
+            <h2 className="mt-2 text-4xl font-bold text-white tracking-tighter">
               {formatCurrency(totalIncome - totalSpent)}
             </h2>
-            <div className="mt-10 grid grid-cols-2 gap-4">
+            <div className="mt-8 grid grid-cols-2 gap-3">
               <div 
                 onClick={() => navigate("/income")}
-                className="rounded-3xl bg-slate-800/80 p-5 border border-slate-700/50 cursor-pointer active:scale-95 transition-all group"
+                className="rounded-3xl bg-slate-800/80 p-4 border border-slate-700/50 cursor-pointer active:scale-95 transition-all group"
               >
-                <p className="text-[10px] font-bold text-slate-500/80 uppercase mb-1">Inflow</p>
-                <p className="text-lg font-bold text-emerald-400 group-hover:scale-105 transition-transform">{formatCurrency(totalIncome)}</p>
+                <p className="text-[9px] font-bold text-slate-500/80 uppercase mb-0.5">Inflow</p>
+                <p className="text-base font-bold text-emerald-400 group-hover:scale-105 transition-transform">{formatCurrency(totalIncome)}</p>
               </div>
-              <div className="rounded-3xl bg-slate-800/80 p-5 border border-slate-700/50 group">
-                <p className="text-[10px] font-bold text-slate-500/80 uppercase mb-1">Outflow</p>
-                <p className="text-lg font-bold text-rose-400 group-hover:scale-105 transition-transform">{formatCurrency(totalSpent)}</p>
+              <div className="rounded-3xl bg-slate-800/80 p-4 border border-slate-700/50 group">
+                <p className="text-[9px] font-bold text-slate-500/80 uppercase mb-0.5">Outflow</p>
+                <p className="text-base font-bold text-rose-400 group-hover:scale-105 transition-transform">{formatCurrency(totalSpent)}</p>
               </div>
             </div>
           </div>
@@ -314,31 +314,31 @@ export default function Dashboard() {
           </div>
           <button
             onClick={() => setShowIncomeModal(true)}
-            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 p-5 text-emerald-400 transition-all active:scale-90"
+            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 p-4 text-emerald-400 transition-all active:scale-90"
           >
-            <Plus className="h-6 w-6" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Record Inflow</span>
+            <Plus className="h-5 w-5" />
+            <span className="text-[9px] font-bold uppercase tracking-wider">Inflow</span>
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-rose-500/10 border border-rose-500/20 p-5 text-rose-400 transition-all active:scale-90"
+            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-rose-500/10 border border-rose-500/20 p-4 text-rose-400 transition-all active:scale-90"
           >
-            <Plus className="h-6 w-6" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Record Outflow</span>
+            <Plus className="h-5 w-5" />
+            <span className="text-[9px] font-bold uppercase tracking-wider">Outflow</span>
           </button>
           <button
             onClick={() => navigate("/reports")}
-            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-slate-800/50 border border-slate-700/50 p-5 text-slate-300 transition-all active:scale-90"
+            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-slate-800/50 border border-slate-700/50 p-4 text-slate-300 transition-all active:scale-90"
           >
-            <TrendingUp className="h-6 w-6" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">Historical Data</span>
+            <TrendingUp className="h-5 w-5" />
+            <span className="text-[9px] font-bold uppercase tracking-wider">Analysis</span>
           </button>
           <button
             onClick={() => setShowSMSModal(true)}
-            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-slate-800/50 border border-slate-700/50 p-5 text-slate-300 transition-all active:scale-90"
+            className="flex flex-col items-center justify-center gap-2 rounded-3xl bg-slate-800/50 border border-slate-700/50 p-4 text-slate-300 transition-all active:scale-90"
           >
-            <MessageSquare className="h-6 w-6" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">SMS Archive</span>
+            <MessageSquare className="h-5 w-5" />
+            <span className="text-[9px] font-bold uppercase tracking-wider">History</span>
           </button>
         </div>
       </header>

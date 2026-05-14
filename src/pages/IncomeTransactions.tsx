@@ -113,7 +113,7 @@ export default function IncomeTransactions() {
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-lg bg-[#0f172a] px-4 pb-24 pt-8">
+    <div className="mx-auto min-h-screen max-w-md bg-[#0f172a] px-4 pb-24 pt-8">
       <header className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <button 

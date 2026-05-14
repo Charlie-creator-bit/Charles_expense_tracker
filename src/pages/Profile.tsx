@@ -68,7 +68,7 @@ export default function Profile() {
   };
 
   return (
-    <div className="mx-auto max-w-lg px-4 pb-24 pt-8">
+    <div className="mx-auto max-w-md px-4 pb-24 pt-8">
       <header className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight text-white font-display">Identity Settings</h1>
         <p className="text-xs text-slate-400 font-medium">Configure your operational parameters and financial thresholds.</p>

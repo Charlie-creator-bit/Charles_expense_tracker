@@ -137,7 +137,7 @@ export default function Reports() {
   if (isLoading) return <div className="flex h-screen items-center justify-center text-slate-400">Loading Report Data...</div>;
 
   return (
-    <div className="mx-auto max-w-lg px-4 pb-24 pt-8">
+    <div className="mx-auto max-w-md px-4 pb-24 pt-8">
       <header className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight text-white font-display">Analysis</h1>
         <p className="text-xs text-slate-400">Node performance and cashflow flux.</p>
